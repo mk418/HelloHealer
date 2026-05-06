@@ -1,1 +1,4 @@
 Libs/
+
+# macOS Finder metadata — gets sprinkled everywhere by the OS.
+.DS_Store
