@@ -23,6 +23,7 @@ local charDefaults = {
     showPets = false,
     bindings = {},
     focusList = {},
+    triageEnabled = true,
 }
 
 Config.defaultPosition = { point = "TOPLEFT", x = 15, y = -140 }

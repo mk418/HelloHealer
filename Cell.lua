@@ -540,7 +540,7 @@ function Cell:Skin(button)
     -- right. Each slot is a Frame with a texture + a Cooldown overlay
     -- for swipe + countdown text.
     button.cdIcons = {}
-    for i = 1, 3 do
+    for i = 1, 4 do
         local slot = CreateFrame("Frame", nil, hpBar)
         slot:SetSize(14, 14)
         if i == 1 then
@@ -652,6 +652,23 @@ function Cell:Skin(button)
     -- additive-blend into a brighter halo rather than fighting for the
     -- same pixels.
     button.focusGlow = {
+        makeGlow({"BOTTOMLEFT", button, "TOPLEFT", -gth, 0},
+                 {"BOTTOMRIGHT", button, "TOPRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPLEFT", button, "BOTTOMLEFT", -gth, 0},
+                 {"TOPRIGHT", button, "BOTTOMRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPRIGHT", button, "TOPLEFT", 0, 0},
+                 {"BOTTOMRIGHT", button, "BOTTOMLEFT", 0, 0}, gth, nil),
+        makeGlow({"TOPLEFT", button, "TOPRIGHT", 0, 0},
+                 {"BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0}, gth, nil),
+    }
+
+    -- Triage glow: same outer-ring geometry as target/focus, painted by
+    -- Modules/Triage.lua when (HP + LibHealComm-predicted incoming) /
+    -- maxHP falls below the triage threshold. Pure white at high alpha
+    -- so it dominates the additive stack — even when a triage cell is
+    -- also your current target or assigned focus the white channel
+    -- reads as "heal this NOW" through the underlying cyan/pink.
+    button.triageGlow = {
         makeGlow({"BOTTOMLEFT", button, "TOPLEFT", -gth, 0},
                  {"BOTTOMRIGHT", button, "TOPRIGHT", gth, 0}, nil, gth),
         makeGlow({"TOPLEFT", button, "BOTTOMLEFT", -gth, 0},

@@ -330,6 +330,21 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         else
             print("|cff80ff80HelloHealer|r manual tanks: " .. table.concat(list, ", "))
         end
+    elseif msg == "triage" or msg:match("^triage%s+") then
+        local arg = msg:match("^triage%s+(%S+)")
+        local on
+        if arg == "on" then
+            on = true
+        elseif arg == "off" then
+            on = false
+        elseif arg == nil then
+            on = not (ns.Triage and ns.Triage:IsEnabled())
+        else
+            print("|cff80ff80HelloHealer|r usage: /hh triage [on|off]  (toggles when no arg)")
+            return
+        end
+        if ns.Triage and ns.Triage.SetEnabled then ns.Triage:SetEnabled(on) end
+        print("|cff80ff80HelloHealer|r triage = " .. (on and "on" or "off"))
     elseif msg == "focuses" then
         local list = (HelloHealerCharDB and HelloHealerCharDB.focusList) or {}
         if #list == 0 then
@@ -394,7 +409,7 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             print("|cff80ff80HelloHealer|r not in focus list: " .. name)
         end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh triage [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
 

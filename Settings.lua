@@ -557,6 +557,15 @@ function S:RefreshTankList()
     S:RefreshCombatState()
 end
 
+-- Called by ns.Triage:SetEnabled so the panel checkbox reflects the
+-- current flag when the user toggles via /hh triage. SetChecked
+-- doesn't fire OnClick, so this won't loop back into SetEnabled.
+function S:RefreshTriageCheckbox()
+    local panel = self.panel
+    if not panel or not panel.triageCb then return end
+    panel.triageCb:SetChecked(HelloHealerCharDB and HelloHealerCharDB.triageEnabled ~= false)
+end
+
 function S:RefreshFocusList()
     local panel = self.panel
     if not panel or not panel.focusContainer then return end
@@ -716,6 +725,22 @@ function S:Build()
     table.insert(panel.staticGated, petsCb)
     attachCombatTooltip(petsCb)
     panel.petsCb = petsCb
+
+    -- Triage highlight toggle. Modules/Triage.lua paints a non-secure
+    -- overlay so this isn't combat-gated; ns.Triage:SetEnabled is the
+    -- single entry point shared with the /hh triage slash command, so
+    -- toggling either way keeps both surfaces in sync.
+    local triageCb = makeCheckButton(content, "Triage highlight")
+    -- Same horizontal-spacing convention as petsCb relative to lockCb:
+    -- a fixed offset wide enough to clear the previous checkbox's label
+    -- without depending on whether the template populated cb.Text.
+    triageCb:SetPoint("LEFT", petsCb, "RIGHT", 160, 0)
+    triageCb:SetScript("OnClick", function(self)
+        if ns.Triage and ns.Triage.SetEnabled then
+            ns.Triage:SetEnabled(self:GetChecked() and true or false)
+        end
+    end)
+    panel.triageCb = triageCb
     y = y - 32
 
     -- Scale slider (uses OptionsSliderTemplate which provides Low/High
@@ -831,6 +856,7 @@ function S:Build()
     panel:SetScript("OnShow", function()
         lockCb:SetChecked(HelloHealerCharDB.locked and true or false)
         petsCb:SetChecked(HelloHealerCharDB.showPets and true or false)
+        triageCb:SetChecked(HelloHealerCharDB.triageEnabled ~= false)
         local s = (HelloHealerDB.layout and HelloHealerDB.layout.scale) or 1.0
         scaleSlider:SetValue(s)
         valueLabel:SetText(("%.2f"):format(s))

@@ -13,6 +13,11 @@ local TRACKED = {
         { name = "Power Word: Shield", filter = "HELPFUL" },
         { name = "Weakened Soul",      filter = "HARMFUL" },
         { name = "Power Infusion",     filter = "HELPFUL" },
+        -- Fear Ward: single-target, long cooldown, often pre-cast on the
+        -- assigned target before fear pulls. Tracked so any priest in
+        -- the raid can see who's already warded and avoid wasting a
+        -- second cast — same shared-visibility logic as PW:S above.
+        { name = "Fear Ward",          filter = "HELPFUL" },
     },
     DRUID = {
         { name = "Power Word: Shield", filter = "HELPFUL" },

@@ -39,3 +39,4 @@ Modules\TargetGlow.lua
 Modules\Defensives.lua
 Modules\MissingBuffs.lua
 Modules\Focus.lua
+Modules\Triage.lua
