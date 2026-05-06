@@ -1,0 +1,41 @@
+# BigWigs packager config. Used by the CurseForge / WowInterface
+# release-builder GitHub Action and by `release.sh` runs locally.
+#
+# Externals are fetched fresh at build time, so we don't commit the
+# Libs/ folder (.gitignore'd). For local development the libs need to
+# be present manually — copying from HealBot Continued's Libs/ folder
+# is the path of least resistance for Classic Era, since the canonical
+# LibHealComm-4.0 hasn't seen Classic-Era-specific maintenance.
+#
+# If the externals listed here turn out not to be Classic-Era-compatible
+# at release time, switch to embedding by removing this `externals`
+# block and committing the lib copies into the repo (also remove
+# `Libs/` from .gitignore in that case).
+
+package-as: HelloHealer
+
+externals:
+    Libs/LibStub:
+        url: https://repos.wowace.com/wow/libstub
+        tag: latest
+    Libs/LibHealComm-4.0:
+        url: https://repos.wowace.com/wow/libhealcomm-4-0
+        tag: latest
+
+# Files that should NOT end up in the released zip. The packager
+# already excludes hidden files by default, but listing key items
+# explicitly avoids surprises.
+ignore:
+    - .gitignore
+    - .pkgmeta
+    - .github
+    - DESIGN.md
+    - README.md
+
+# Generate a -nolib variant of the zip so users who already have
+# LibStub/LibHealComm via another addon can grab a smaller download
+# without redundant lib copies.
+enable-nolib-creation: yes
+
+# No `manual-changelog` block: the packager auto-generates the
+# changelog from git commit messages between tags.

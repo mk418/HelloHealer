@@ -1,0 +1,40 @@
+## Interface: 11508
+## Title: HelloHealer
+## Notes: Lean, opinionated healing UI for Priest, Druid, Paladin
+## Author: Drikk
+## Version: 0.1.0
+## SavedVariables: HelloHealerDB
+## SavedVariablesPerCharacter: HelloHealerCharDB
+
+# Libraries are embedded via .pkgmeta during release builds.
+# For local development, drop LibStub/LibHealComm into Libs/.
+Libs\LibStub\LibStub.lua
+Libs\HealBotShim.lua
+Libs\LibHealComm-4.0\LibHealComm-4.0.xml
+
+Core.lua
+Config.lua
+BlizzardFrames.lua
+Settings.lua
+
+Bindings.lua
+ClickCast.lua
+
+Cell.lua
+Header.lua
+TankHeader.lua
+TargetCells.lua
+TestLayout.lua
+
+Modules\Health.lua
+Modules\Power.lua
+Modules\Range.lua
+Modules\Aura.lua
+Modules\HoT.lua
+Modules\Threat.lua
+Modules\IncomingHeal.lua
+Modules\CooldownTrack.lua
+Modules\PendingRes.lua
+Modules\TargetGlow.lua
+Modules\Defensives.lua
+Modules\MissingBuffs.lua
