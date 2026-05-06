@@ -330,6 +330,26 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         else
             print("|cff80ff80HelloHealer|r manual tanks: " .. table.concat(list, ", "))
         end
+    elseif msg == "frames" or msg:match("^frames%s+") then
+        local arg = msg:match("^frames%s+(%S+)")
+        local hide
+        if arg == "off" then
+            hide = true
+        elseif arg == "on" then
+            hide = false
+        elseif arg == nil then
+            hide = not (HelloHealerCharDB and HelloHealerCharDB.framesHidden)
+        else
+            print("|cff80ff80HelloHealer|r usage: /hh frames [on|off]  (toggles when no arg)")
+            return
+        end
+        HelloHealerCharDB.framesHidden = hide
+        if ns.Header and ns.Header.ApplyVisibility then ns.Header:ApplyVisibility() end
+        if InCombatLockdown() then
+            print(("|cff80ff80HelloHealer|r frames will be %s after combat"):format(hide and "hidden" or "shown"))
+        else
+            print("|cff80ff80HelloHealer|r frames " .. (hide and "hidden" or "shown"))
+        end
     elseif msg == "triage" or msg:match("^triage%s+") then
         local arg = msg:match("^triage%s+(%S+)")
         local on
@@ -409,7 +429,7 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             print("|cff80ff80HelloHealer|r not in focus list: " .. name)
         end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh triage [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
 

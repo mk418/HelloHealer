@@ -24,6 +24,7 @@ local charDefaults = {
     bindings = {},
     focusList = {},
     triageEnabled = true,
+    framesHidden = false,
 }
 
 Config.defaultPosition = { point = "TOPLEFT", x = 15, y = -140 }

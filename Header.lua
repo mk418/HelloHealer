@@ -83,6 +83,20 @@ local function makeColumn(index, filter, anchorTo, savedPos)
     h:SetAttribute("unitsPerColumn",     10)
     h:SetAttribute("maxColumns",         1)
 
+    -- groupBy + groupingOrder force the secure header to place units
+    -- in subgroup-then-raid-index order instead of pure raid-index
+    -- order. Without this, a column with filter "3,4" interleaves
+    -- group 3 and group 4 players based on the order they joined the
+    -- raid; with this, group 3 fills the top half and group 4 the
+    -- bottom. It also makes the secure header re-evaluate slot
+    -- placement on subgroup-only changes — without groupBy, a player
+    -- moving from group 3 to group 5 can keep their cell slot until
+    -- the next stronger refresh, leaving the tooltip's "Group N" line
+    -- contradicting the column the cell sits in. groupingOrder mirrors
+    -- the column's groupFilter so the order matches what's filtered in.
+    h:SetAttribute("groupBy",        "GROUP")
+    h:SetAttribute("groupingOrder",  filter)
+
     h:SetAttribute("point",   "TOP")
     h:SetAttribute("yOffset", -2)
 
@@ -224,6 +238,13 @@ function Header:Create()
 
     ns:On("GROUP_ROSTER_UPDATE",   skinAll)
     ns:On("PLAYER_ENTERING_WORLD", skinAll)
+    -- RAID_ROSTER_UPDATE is officially deprecated in favour of
+    -- GROUP_ROSTER_UPDATE, but it still fires in Classic Era and
+    -- catches some subgroup-only edits that GROUP_ROSTER_UPDATE
+    -- occasionally misses. Belt-and-suspenders so a subgroup move
+    -- doesn't leave a cell stuck on the previous unit until the next
+    -- stronger refresh trigger.
+    ns:On("RAID_ROSTER_UPDATE",    skinAll)
     -- Pet summon / dismiss / change: SecureGroupPetHeaderTemplate spawns
     -- the new pet's cell internally, but our skin pass needs to run
     -- against any newly-created child button.
@@ -238,6 +259,59 @@ function Header:Create()
 
     self:ApplyShowPets()
     self:CreateMover()
+    self:ApplyVisibility()
+end
+
+-- Show or hide every frame this addon owns based on
+-- HelloHealerCharDB.framesHidden. Used by the /hh frames slash
+-- command and re-applied at login so the saved state persists.
+-- Hide()/Show() on a SecureGroupHeader is combat-blocked, so changes
+-- made in lockdown defer to PLAYER_REGEN_ENABLED. Mover is parented
+-- to column 1, so it auto-hides with its parent — no extra wiring.
+-- TankHeader and TargetCells live as siblings, so they need explicit
+-- toggles. Pet column re-show is conditional on showPets so we don't
+-- expose the pet column to a player who has it disabled.
+function Header:ApplyVisibility()
+    if InCombatLockdown() then
+        self.pendingVisibility = true
+        return
+    end
+    self.pendingVisibility = false
+
+    local hide = HelloHealerCharDB and HelloHealerCharDB.framesHidden
+
+    if self.columns then
+        for i = 1, #self.columns do
+            if hide then self.columns[i]:Hide() else self.columns[i]:Show() end
+        end
+    end
+
+    if self.petColumn then
+        if hide then
+            self.petColumn:Hide()
+        elseif HelloHealerCharDB and HelloHealerCharDB.showPets then
+            self.petColumn:Show()
+        end
+    end
+
+    if ns.TankHeader and ns.TankHeader.frame then
+        if hide then ns.TankHeader.frame:Hide() else ns.TankHeader.frame:Show() end
+    end
+
+    if ns.TargetCells then
+        if ns.TargetCells.target then
+            if hide then ns.TargetCells.target:Hide() else ns.TargetCells.target:Show() end
+        end
+        if ns.TargetCells.tot then
+            if hide then ns.TargetCells.tot:Hide() else ns.TargetCells.tot:Show() end
+        end
+    end
+
+    if self.RefreshMover then self:RefreshMover() end
+
+    if ns.Settings and ns.Settings.RefreshFramesCheckbox then
+        ns.Settings:RefreshFramesCheckbox()
+    end
 end
 
 -- Show or hide the pet column based on HelloHealerCharDB.showPets.
@@ -377,6 +451,9 @@ ns:On("PLAYER_REGEN_ENABLED", function()
     end
     if Header.pendingPetReanchor then
         Header:ReanchorPetColumn()
+    end
+    if Header.pendingVisibility then
+        Header:ApplyVisibility()
     end
 end)
 

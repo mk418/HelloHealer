@@ -566,6 +566,14 @@ function S:RefreshTriageCheckbox()
     panel.triageCb:SetChecked(HelloHealerCharDB and HelloHealerCharDB.triageEnabled ~= false)
 end
 
+-- Called by Header:ApplyVisibility so the panel checkbox reflects the
+-- current visibility state when the user toggles via /hh frames.
+function S:RefreshFramesCheckbox()
+    local panel = self.panel
+    if not panel or not panel.framesCb then return end
+    panel.framesCb:SetChecked(not (HelloHealerCharDB and HelloHealerCharDB.framesHidden))
+end
+
 function S:RefreshFocusList()
     local panel = self.panel
     if not panel or not panel.focusContainer then return end
@@ -743,6 +751,23 @@ function S:Build()
     panel.triageCb = triageCb
     y = y - 32
 
+    -- Master visibility toggle. Phrased positively ("Show frames"
+    -- checked = visible) so the checkbox state reads naturally; the
+    -- saved variable is HelloHealerCharDB.framesHidden, so the OnClick
+    -- inverts when writing. Header:ApplyVisibility is the single entry
+    -- point shared with /hh frames; it handles combat lockdown
+    -- internally and calls back into RefreshFramesCheckbox so the two
+    -- surfaces stay in sync.
+    local framesCb = makeCheckButton(content, "Show frames")
+    framesCb:SetPoint("TOPLEFT", 16, y)
+    framesCb:SetScript("OnClick", function(self)
+        if not HelloHealerCharDB then return end
+        HelloHealerCharDB.framesHidden = not self:GetChecked()
+        if ns.Header and ns.Header.ApplyVisibility then ns.Header:ApplyVisibility() end
+    end)
+    panel.framesCb = framesCb
+    y = y - 32
+
     -- Scale slider (uses OptionsSliderTemplate which provides Low/High
     -- text labels and a centered numeric value label). SetScale on
     -- protected frames is combat-blocked, so the slider's effect is
@@ -857,6 +882,7 @@ function S:Build()
         lockCb:SetChecked(HelloHealerCharDB.locked and true or false)
         petsCb:SetChecked(HelloHealerCharDB.showPets and true or false)
         triageCb:SetChecked(HelloHealerCharDB.triageEnabled ~= false)
+        framesCb:SetChecked(not HelloHealerCharDB.framesHidden)
         local s = (HelloHealerDB.layout and HelloHealerDB.layout.scale) or 1.0
         scaleSlider:SetValue(s)
         valueLabel:SetText(("%.2f"):format(s))

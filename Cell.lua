@@ -182,13 +182,35 @@ end
 
 -- Resolve a unit's raid subgroup (1..8). Nil if not in a raid or the
 -- unit isn't a raid member (party/solo, NPCs, enemy targets).
--- UnitInRaid returns a 0-based raid index; GetRaidRosterInfo is 1-based.
+--
+-- Avoids UnitInRaid: its 0-based-vs-1-based contract has shifted
+-- between Classic Era patches, and an off-by-one when feeding into
+-- GetRaidRosterInfo (which is firmly 1-based) returns the *next*
+-- raid member's subgroup — produces a tooltip that's plausibly
+-- correct but consistently wrong by one slot. Two reliable paths:
+--   1. "raidN" tokens map 1:1 to the raid roster index, so we parse
+--      N out and call GetRaidRosterInfo(N) directly.
+--   2. "player" / "partyN" / other tokens have no direct mapping;
+--      walk the roster and match by name.
 local function unitSubgroup(unit)
     if not unit or not IsInRaid() then return nil end
-    local idx = UnitInRaid(unit)
-    if not idx then return nil end
-    local _, _, subgroup = GetRaidRosterInfo(idx + 1)
-    return subgroup
+
+    local n = unit:match("^raid(%d+)$")
+    if n then
+        local _, _, subgroup = GetRaidRosterInfo(tonumber(n))
+        return subgroup
+    end
+
+    local name, realm = UnitName(unit)
+    if not name then return nil end
+    local full = (realm and realm ~= "") and (name .. "-" .. realm) or nil
+    for i = 1, GetNumGroupMembers() do
+        local rname, _, subgroup = GetRaidRosterInfo(i)
+        if rname and (rname == full or rname == name) then
+            return subgroup
+        end
+    end
+    return nil
 end
 
 -- Resolve a unit's current zone name. Three sources:
@@ -205,10 +227,23 @@ local function unitZone(unit)
         return GetRealZoneText()
     end
     if IsInRaid() then
-        local idx = UnitInRaid(unit)
-        if idx then
-            local _, _, _, _, _, _, zone = GetRaidRosterInfo(idx + 1)
+        -- Same UnitInRaid pitfall as unitSubgroup above — parse the
+        -- raid index out of the unit token directly when possible,
+        -- fall back to a name match for non-"raidN" tokens.
+        local n = unit:match("^raid(%d+)$")
+        if n then
+            local _, _, _, _, _, _, zone = GetRaidRosterInfo(tonumber(n))
             return zone
+        end
+        local name, realm = UnitName(unit)
+        if name then
+            local full = (realm and realm ~= "") and (name .. "-" .. realm) or nil
+            for i = 1, GetNumGroupMembers() do
+                local rname, _, _, _, _, _, zone = GetRaidRosterInfo(i)
+                if rname and (rname == full or rname == name) then
+                    return zone
+                end
+            end
         end
     end
     if IsInGroup() and UnitInParty and UnitInParty(unit) then
@@ -555,6 +590,13 @@ function Cell:Skin(button)
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetHideCountdownNumbers(false)
+        -- Reverse swipe: bright area = remaining duration, dark grows
+        -- inward as the buff depletes. Matches the standard buff-icon
+        -- visual intuition ("watch the bright slice shrink") rather
+        -- than the default cooldown swipe ("watch the dark slice
+        -- shrink") which reads as elapsed time and is backwards for
+        -- aura tracking.
+        cd:SetReverse(true)
         slot.cooldown = cd
         slot:Hide()
         button.cdIcons[i] = slot
@@ -580,6 +622,7 @@ function Cell:Skin(button)
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetHideCountdownNumbers(false)
+        cd:SetReverse(true)  -- bright = remaining; see cdIcons above.
         slot.cooldown = cd
         slot:Hide()
         button.defensiveIcons[i] = slot

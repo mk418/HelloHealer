@@ -37,7 +37,7 @@ A lean, opinionated healing addon for World of Warcraft Classic Era, intended to
 └────────┘    └────────┴────────┴────────┴────────┘
 ```
 
-- **Group frames:** 1×N for 5-man, 4 columns × 10 rows for a 40-man raid (two parties per column: 1+2, 3+4, 5+6, 7+8). Driven by `groupBy = "GROUP"` + `groupingOrder = "1,2,3,4,5,6,7,8"` so column packing is deterministic regardless of raid join order.
+- **Group frames:** 1×N for 5-man, 4 columns × 10 rows for a 40-man raid (two parties per column: 1+2, 3+4, 5+6, 7+8). Each column is a separate `SecureGroupHeaderTemplate` with `groupFilter` and `groupingOrder` set to its two subgroups (e.g., column 2 uses `"3,4"` for both) and `groupBy = "GROUP"`, so the top half of the column is the lower subgroup and the bottom half is the higher subgroup, deterministically regardless of raid join order.
 - **Target / Target-of-Target frames:** anchored above the group frames, left-aligned with the first group column. Two cells side by side.
 - **Tank frames:** anchored to the left of the group frames, single column up to 10 tall (matches the group block's height), same cell size as group frames. Toggleable.
 - **Always visible**, even out of combat / when solo.
