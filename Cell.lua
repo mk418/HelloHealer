@@ -644,6 +644,24 @@ function Cell:Skin(button)
                  {"BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0}, gth, nil),
     }
 
+    -- Focus glow: same outer-ring geometry as targetGlow, painted by
+    -- Modules/Focus.lua when this cell's player is on the per-character
+    -- focus list (raid healing assignments). Pink instead of cyan so
+    -- the two signals are independently legible; both use ADD blend so
+    -- when the focused player is also your current target the colours
+    -- additive-blend into a brighter halo rather than fighting for the
+    -- same pixels.
+    button.focusGlow = {
+        makeGlow({"BOTTOMLEFT", button, "TOPLEFT", -gth, 0},
+                 {"BOTTOMRIGHT", button, "TOPRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPLEFT", button, "BOTTOMLEFT", -gth, 0},
+                 {"TOPRIGHT", button, "BOTTOMRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPRIGHT", button, "TOPLEFT", 0, 0},
+                 {"BOTTOMRIGHT", button, "BOTTOMLEFT", 0, 0}, gth, nil),
+        makeGlow({"TOPLEFT", button, "TOPRIGHT", 0, 0},
+                 {"BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0}, gth, nil),
+    }
+
     -- Missing-buffs indicator: a 3 px solid amber bar in the column
     -- gap to the LEFT of the cell, full cell height. Lives outside
     -- the cell's left edge so it doesn't compete with cell content;

@@ -254,6 +254,109 @@ local function buildTankAddRow(parent)
     return row
 end
 
+-- Focus rows are deliberately NOT combat-gated. Modules/Focus.lua only
+-- toggles non-secure overlay textures; adding/removing names rewrites
+-- HelloHealerCharDB.focusList and triggers a paint sweep, neither of
+-- which touches secure attributes. Same goes for the add row below.
+
+local function buildFocusRow(parent, name)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetSize(540, 22)
+
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", 0, 0)
+    label:SetWidth(340)
+    label:SetJustifyH("LEFT")
+    label:SetText(name)
+
+    local remove = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    remove:SetSize(70, 22)
+    remove:SetText("Remove")
+    remove:SetPoint("LEFT", label, "RIGHT", 12, 0)
+    remove:SetScript("OnClick", function()
+        local list = HelloHealerCharDB.focusList
+        for i, n in ipairs(list) do
+            if n == name then
+                table.remove(list, i)
+                break
+            end
+        end
+        if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
+        S:RefreshFocusList()
+    end)
+
+    return row
+end
+
+local function buildFocusAddRow(parent)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetSize(540, 22)
+
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontDisable")
+    label:SetPoint("LEFT", 0, 0)
+    label:SetWidth(60)
+    label:SetJustifyH("LEFT")
+    label:SetText("New:")
+
+    local nameEdit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+    nameEdit:SetSize(270, 20)
+    nameEdit:SetPoint("LEFT", label, "RIGHT", 12, 0)
+    nameEdit:SetAutoFocus(false)
+
+    local addBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    addBtn:SetSize(120, 22)
+    addBtn:SetText("Add")
+    addBtn:SetPoint("LEFT", nameEdit, "RIGHT", 12, 0)
+
+    local function add()
+        local name = nameEdit:GetText():gsub("^%s+", ""):gsub("%s+$", "")
+        if name == "" then
+            -- Same fallback as `/hh focus` with no arg.
+            if UnitExists("target") and UnitIsPlayer("target") and UnitIsFriend("player", "target")
+               and ns.TankHeader and ns.TankHeader.FullName then
+                name = ns.TankHeader.FullName("target")
+            else
+                print("|cff80ff80HelloHealer|r enter a name, or target a friendly player")
+                return
+            end
+        elseif ns.TankHeader and ns.TankHeader.ResolveName then
+            name = ns.TankHeader:ResolveName(name)
+        end
+        HelloHealerCharDB.focusList = HelloHealerCharDB.focusList or {}
+        local list = HelloHealerCharDB.focusList
+        for _, existing in ipairs(list) do
+            if existing:lower() == name:lower() then
+                print("|cff80ff80HelloHealer|r already focused: " .. existing)
+                return
+            end
+        end
+        table.insert(list, name)
+        if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
+        nameEdit:SetText("")
+        S:RefreshFocusList()
+    end
+
+    addBtn:SetScript("OnClick", add)
+    nameEdit:SetScript("OnEnterPressed", function(self) self:ClearFocus(); add() end)
+
+    local hint = nameEdit:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    hint:SetPoint("LEFT", 4, 0)
+    hint:SetText("name (or leave empty to use your target)")
+    local function updateHint()
+        if nameEdit:GetText() == "" and not nameEdit:HasFocus() then
+            hint:Show()
+        else
+            hint:Hide()
+        end
+    end
+    nameEdit:SetScript("OnEditFocusGained", function() hint:Hide() end)
+    nameEdit:SetScript("OnEditFocusLost",   updateHint)
+    nameEdit:SetScript("OnTextChanged",     updateHint)
+    updateHint()
+
+    return row
+end
+
 local function buildBindingRow(parent, b)
     local row = CreateFrame("Frame", nil, parent)
     row:SetSize(540, 24)
@@ -452,6 +555,39 @@ function S:RefreshTankList()
     container:SetHeight(#list * rowH + rowH + 8)
     updateContentHeight()
     S:RefreshCombatState()
+end
+
+function S:RefreshFocusList()
+    local panel = self.panel
+    if not panel or not panel.focusContainer then return end
+
+    local container = panel.focusContainer
+    if container.rows then
+        for _, row in ipairs(container.rows) do
+            row:Hide()
+            row:SetParent(nil)
+        end
+    end
+    container.rows = {}
+
+    local list = HelloHealerCharDB and HelloHealerCharDB.focusList or {}
+    local rowH = 24
+
+    for i, name in ipairs(list) do
+        local row = buildFocusRow(container, name)
+        row:SetPoint("TOPLEFT", 0, -(i - 1) * rowH)
+        table.insert(container.rows, row)
+    end
+
+    if not container.addRow then
+        container.addRow = buildFocusAddRow(container)
+    end
+    container.addRow:ClearAllPoints()
+    container.addRow:SetPoint("TOPLEFT", 0, -(#list * rowH + 4))
+    container.addRow:Show()
+
+    container:SetHeight(#list * rowH + rowH + 8)
+    updateContentHeight()
 end
 
 function S:RefreshBindings()
@@ -665,10 +801,26 @@ function S:Build()
     tankContainer:SetWidth(540)
     panel.tankContainer = tankContainer
 
-    -- Editable bindings, anchored below the tank container so it reflows
-    -- as tanks are added/removed.
+    -- Editable focus list (raid healing assignments) — paints a pink
+    -- outer-ring glow on the assigned player's group/tank cell. Non-
+    -- secure overlay, so no combat gating needed. Anchored below the
+    -- tank container so the whole stack reflows as either list grows.
+    local focusH = makeHeader(content, "Focus list")
+    focusH:SetPoint("TOPLEFT", tankContainer, "BOTTOMLEFT", -8, -16)
+
+    local focusNote = content:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    focusNote:SetPoint("LEFT", focusH, "RIGHT", 12, 0)
+    focusNote:SetText("(highlights healing assignments with a pink ring on their cell)")
+
+    local focusContainer = CreateFrame("Frame", nil, content)
+    focusContainer:SetPoint("TOPLEFT", focusH, "BOTTOMLEFT", 8, -6)
+    focusContainer:SetWidth(540)
+    panel.focusContainer = focusContainer
+
+    -- Editable bindings, anchored below the focus container so it
+    -- reflows as either list above changes height.
     local bindH = makeHeader(content, "Click-cast bindings")
-    bindH:SetPoint("TOPLEFT", tankContainer, "BOTTOMLEFT", -8, -16)
+    bindH:SetPoint("TOPLEFT", focusContainer, "BOTTOMLEFT", -8, -16)
     panel.bindingsHeader = bindH
 
     local container = CreateFrame("Frame", nil, content)
@@ -683,6 +835,7 @@ function S:Build()
         scaleSlider:SetValue(s)
         valueLabel:SetText(("%.2f"):format(s))
         S:RefreshTankList()
+        S:RefreshFocusList()
         S:RefreshBindings()
         -- The Refresh* calls already trigger RefreshCombatState, but
         -- call once more in case neither container had any rows to

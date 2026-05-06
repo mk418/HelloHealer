@@ -38,3 +38,4 @@ Modules\PendingRes.lua
 Modules\TargetGlow.lua
 Modules\Defensives.lua
 Modules\MissingBuffs.lua
+Modules\Focus.lua

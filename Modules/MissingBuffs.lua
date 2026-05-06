@@ -9,12 +9,17 @@ local ADDON_NAME, ns = ...
 -- of Fortitude satisfies the Fortitude category, Gift of the Wild
 -- satisfies the Mark category.
 
+-- skipClasses: targets that don't benefit from the buff. Warriors and
+-- rogues have no mana, so Spirit is wasted on them. Hunters DO want
+-- Spirit (out-of-combat mana regen between pulls is meaningful for
+-- their resource management).
 local CATEGORIES = {
     PRIEST = {
         { name = "Fortitude",
           auras = { "Power Word: Fortitude", "Prayer of Fortitude" } },
         { name = "Spirit",
-          auras = { "Divine Spirit", "Prayer of Spirit" } },
+          auras = { "Divine Spirit", "Prayer of Spirit" },
+          skipClasses = { WARRIOR = true, ROGUE = true } },
     },
     DRUID = {
         { name = "Mark of the Wild",
@@ -53,6 +58,8 @@ local function scan(unit)
     local cats = CATEGORIES[ns.playerClass]
     if not cats or not unit or not UnitExists(unit) then return {} end
 
+    local _, unitClass = UnitClass(unit)
+
     local present = {}
     for i = 1, 40 do
         local name = getBuff(unit, i)
@@ -62,11 +69,13 @@ local function scan(unit)
 
     local missing = {}
     for _, cat in ipairs(cats) do
-        local has = false
-        for _, auraName in ipairs(cat.auras) do
-            if present[auraName] then has = true; break end
+        if not (cat.skipClasses and cat.skipClasses[unitClass]) then
+            local has = false
+            for _, auraName in ipairs(cat.auras) do
+                if present[auraName] then has = true; break end
+            end
+            if not has then missing[#missing + 1] = cat.name end
         end
-        if not has then missing[#missing + 1] = cat.name end
     end
     return missing
 end

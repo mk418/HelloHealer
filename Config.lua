@@ -22,6 +22,7 @@ local charDefaults = {
     tankFramesEnabled = true,
     showPets = false,
     bindings = {},
+    focusList = {},
 }
 
 Config.defaultPosition = { point = "TOPLEFT", x = 15, y = -140 }

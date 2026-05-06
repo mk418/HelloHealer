@@ -330,7 +330,108 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         else
             print("|cff80ff80HelloHealer|r manual tanks: " .. table.concat(list, ", "))
         end
+    elseif msg == "focuses" then
+        local list = (HelloHealerCharDB and HelloHealerCharDB.focusList) or {}
+        if #list == 0 then
+            print("|cff80ff80HelloHealer|r focus list: (empty)")
+        else
+            print("|cff80ff80HelloHealer|r focuses: " .. table.concat(list, ", "))
+        end
+    elseif msg == "focus" or msg:match("^focus%s+") then
+        local arg = raw:match("^[Ff][Oo][Cc][Uu][Ss]%s+(.+)$")
+        if arg then arg = arg:gsub("^%s+", ""):gsub("%s+$", "") end
+        if arg and arg:lower() == "clear" then
+            HelloHealerCharDB.focusList = {}
+            if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
+            print("|cff80ff80HelloHealer|r focus list cleared")
+            return
+        end
+        local name = arg
+        if not name then
+            if UnitExists("target") and UnitIsPlayer("target") and UnitIsFriend("player", "target") then
+                name = ns.TankHeader.FullName("target")
+            else
+                print("|cff80ff80HelloHealer|r usage: /hh focus <name>  (or target a friendly player and use /hh focus; /hh focus clear to wipe)")
+                return
+            end
+        else
+            name = ns.TankHeader:ResolveName(name)
+        end
+        HelloHealerCharDB.focusList = HelloHealerCharDB.focusList or {}
+        local list = HelloHealerCharDB.focusList
+        for i = 1, #list do
+            if list[i]:lower() == name:lower() then
+                print("|cff80ff80HelloHealer|r already focused: " .. list[i])
+                return
+            end
+        end
+        table.insert(list, name)
+        if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
+        print("|cff80ff80HelloHealer|r added focus: " .. name)
+    elseif msg == "unfocus" or msg:match("^unfocus%s+") then
+        local name = raw:match("^[Uu][Nn][Ff][Oo][Cc][Uu][Ss]%s+(%S+)")
+        if not name then
+            if UnitExists("target") and UnitIsPlayer("target") then
+                name = ns.TankHeader.FullName("target")
+            else
+                print("|cff80ff80HelloHealer|r usage: /hh unfocus <name>  (or target a player and use /hh unfocus)")
+                return
+            end
+        end
+        HelloHealerCharDB.focusList = HelloHealerCharDB.focusList or {}
+        local list = HelloHealerCharDB.focusList
+        local removed
+        for i = #list, 1, -1 do
+            if list[i]:lower() == name:lower() then
+                removed = table.remove(list, i)
+                break
+            end
+        end
+        if removed then
+            if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
+            print("|cff80ff80HelloHealer|r removed focus: " .. removed)
+        else
+            print("|cff80ff80HelloHealer|r not in focus list: " .. name)
+        end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
+
+-- Per-character tank/focus lists are scoped to the current group: the
+-- people on them only exist as raid frame cells while you're grouped
+-- with them, and carrying yesterday's healing assignments into a fresh
+-- raid is more confusing than helpful. GROUP_LEFT fires on disband,
+-- /leavegroup, and being kicked — all the cases where the lists go
+-- stale. RefreshNameList is combat-safe (defers to PLAYER_REGEN_ENABLED
+-- internally) and the focus repaint is non-secure, so no extra gating.
+ns:On("GROUP_LEFT", function()
+    if not HelloHealerCharDB then return end
+    local clearedTanks = HelloHealerCharDB.tankList and #HelloHealerCharDB.tankList > 0
+    local clearedFocus = HelloHealerCharDB.focusList and #HelloHealerCharDB.focusList > 0
+    if not clearedTanks and not clearedFocus then return end
+
+    if clearedTanks then
+        HelloHealerCharDB.tankList = {}
+        if ns.TankHeader and ns.TankHeader.RefreshNameList then
+            ns.TankHeader:RefreshNameList()
+        end
+        if ns.Settings and ns.Settings.RefreshTankList then
+            ns.Settings:RefreshTankList()
+        end
+    end
+    if clearedFocus then
+        HelloHealerCharDB.focusList = {}
+        if ns.Focus and ns.Focus.RepaintAll then
+            ns.Focus.RepaintAll()
+        end
+        if ns.Settings and ns.Settings.RefreshFocusList then
+            ns.Settings:RefreshFocusList()
+        end
+    end
+
+    local parts = {}
+    if clearedTanks then parts[#parts + 1] = "tank list" end
+    if clearedFocus then parts[#parts + 1] = "focus list" end
+    print("|cff80ff80HelloHealer|r left group — cleared " .. table.concat(parts, " and "))
+end)

@@ -12,7 +12,7 @@ Bindings.defaults = {
         { btn = 1, mod = "shift",      spell = "Flash Heal" },
         { btn = 1, mod = "ctrl",       spell = "Dispel Magic" },
         { btn = 1, mod = "ctrl-shift", spell = "Power Word: Fortitude" },
-        { btn = 1, mod = "alt-shift",  spell = "Greater Heal(Rank 1)" },
+        { btn = 1, mod = "alt-shift",  spell = "Renew(Rank 6)" },
         { btn = 1, mod = "alt-ctrl",   spell = "Divine Spirit" },
         { btn = 2, mod = "",           spell = "Renew" },
         { btn = 2, mod = "shift",      spell = "Power Word: Shield" },
@@ -24,7 +24,7 @@ Bindings.defaults = {
         { btn = 3, mod = "shift",      spell = "Greater Heal" },
         { btn = 3, mod = "ctrl",       spell = "Abolish Disease" },
         { btn = 3, mod = "ctrl-shift", spell = "Prayer of Fortitude" },
-        { btn = 3, mod = "alt-shift",  spell = "Renew(Rank 6)" },
+        { btn = 3, mod = "alt-shift",  spell = "Greater Heal(Rank 1)" },
         { btn = 3, mod = "alt-ctrl",   spell = "Prayer of Spirit" },
     },
     DRUID = {
