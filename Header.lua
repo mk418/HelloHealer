@@ -95,6 +95,59 @@ local function makeColumn(index, filter, anchorTo, savedPos)
     return h
 end
 
+-- Right-most player column that currently has a spawned unit cell.
+-- In a 5-man party only col 1 is populated; in raid it depends on
+-- which groups exist. The pet column anchors to this so it sits
+-- flush with the player block, instead of leaving gaps for empty
+-- raid-only columns. Falls back to col 1 if nothing is populated.
+local function lastPopulatedColumn(columns)
+    if not columns then return nil end
+    for i = #columns, 1, -1 do
+        local kids = { columns[i]:GetChildren() }
+        for j = 1, #kids do
+            local unit = kids[j]:GetAttribute("unit")
+            if unit and UnitExists(unit) then
+                return columns[i]
+            end
+        end
+    end
+    return columns[1]
+end
+
+-- Pet column. Lives to the right of the last populated player column
+-- (see Header:ReanchorPetColumn) and uses SecureGroupPetHeaderTemplate,
+-- which iterates pet unit tokens (raidpetN / partypetN / pet) instead
+-- of player tokens. Existence is unconditional; visibility is driven by
+-- HelloHealerCharDB.showPets via Header:ApplyShowPets so toggling on/off
+-- doesn't require recreating the secure frame (which would be
+-- combat-blocked).
+local function makePetColumn()
+    local h = CreateFrame("Frame", "HelloHealerPetHeader", UIParent, "SecureGroupPetHeaderTemplate")
+
+    h:SetAttribute("showSolo",   true)
+    h:SetAttribute("showPlayer", true)
+    h:SetAttribute("showParty",  true)
+    h:SetAttribute("showRaid",   true)
+
+    -- Single tall column. Hunters/warlocks/DKs are the only common
+    -- pet-bearing classes, so 40 is a safe ceiling that avoids the
+    -- multi-column staircase issue documented above for the player
+    -- columns.
+    h:SetAttribute("unitsPerColumn", 40)
+    h:SetAttribute("maxColumns",     1)
+
+    h:SetAttribute("point",   "TOP")
+    h:SetAttribute("yOffset", -2)
+
+    h:SetAttribute("template", "SecureUnitButtonTemplate")
+    h:SetAttribute("initialConfigFunction", ([[
+        self:SetWidth(%d)
+        self:SetHeight(%d)
+    ]]):format(ns.Cell.WIDTH, ns.Cell.HEIGHT))
+
+    return h
+end
+
 function Header:Create()
     local pos = HelloHealerCharDB.position
 
@@ -108,6 +161,8 @@ function Header:Create()
     -- column 1 so existing call sites (TankHeader anchor, TargetCells,
     -- mover, ApplyTankOffset) keep working without churn.
     self.frame = self.columns[1]
+
+    self.petColumn = makePetColumn()
 
     -- Trigger each header's internal update via Hide+Show toggle rather
     -- than calling SecureGroupHeader_Update directly, which DragonflightUI
@@ -145,13 +200,34 @@ function Header:Create()
             -- PLAYER_REGEN_ENABLED, when joinedInCombat is cleared.
             h:SetAlpha(alpha)
         end
+        if self.petColumn and HelloHealerCharDB and HelloHealerCharDB.showPets then
+            self:ReanchorPetColumn()
+            if not InCombatLockdown() then
+                self.petColumn:Hide()
+                self.petColumn:Show()
+            end
+            local kids = { self.petColumn:GetChildren() }
+            for j = 1, #kids do
+                local k = kids[j]
+                if k:GetAttribute("unit") then
+                    ns.Cell:Skin(k)
+                end
+            end
+            self.petColumn:SetAlpha(alpha)
+        end
         if ns.TankHeader and ns.TankHeader.frame then
             ns.TankHeader.frame:SetAlpha(alpha)
         end
     end
 
+    self.skinAll = skinAll
+
     ns:On("GROUP_ROSTER_UPDATE",   skinAll)
     ns:On("PLAYER_ENTERING_WORLD", skinAll)
+    -- Pet summon / dismiss / change: SecureGroupPetHeaderTemplate spawns
+    -- the new pet's cell internally, but our skin pass needs to run
+    -- against any newly-created child button.
+    ns:On("UNIT_PET",              skinAll)
     -- Post-combat catch-up: when someone joins the group while we're in
     -- combat lockdown, the secure header defers spawning their unit
     -- button until PLAYER_REGEN_ENABLED. Our skinAll doesn't re-run on
@@ -160,7 +236,47 @@ function Header:Create()
     ns:On("PLAYER_REGEN_ENABLED",  skinAll)
     skinAll()
 
+    self:ApplyShowPets()
     self:CreateMover()
+end
+
+-- Show or hide the pet column based on HelloHealerCharDB.showPets.
+-- Hide()/Show() on a SecureGroupHeader is combat-blocked, so changes
+-- made in lockdown are deferred to PLAYER_REGEN_ENABLED.
+function Header:ApplyShowPets()
+    if not self.petColumn then return end
+    if InCombatLockdown() then
+        self.pendingShowPets = true
+        return
+    end
+    self.pendingShowPets = false
+    if HelloHealerCharDB and HelloHealerCharDB.showPets then
+        self:ReanchorPetColumn()
+        -- Re-iterate so currently-existing pets spawn their cells.
+        self.petColumn:Hide()
+        self.petColumn:Show()
+        if self.skinAll then self.skinAll() end
+    else
+        self.petColumn:Hide()
+    end
+end
+
+-- Anchor the pet column to the rightmost player column that has at
+-- least one spawned unit. Re-runs on every skinAll so the anchor moves
+-- with roster changes (party → raid, group additions). SetPoint on a
+-- SecureGroupHeader is combat-blocked, so we defer to PLAYER_REGEN_ENABLED.
+function Header:ReanchorPetColumn()
+    if not self.petColumn or not self.columns then return end
+    if InCombatLockdown() then
+        self.pendingPetReanchor = true
+        return
+    end
+    self.pendingPetReanchor = false
+    local target = lastPopulatedColumn(self.columns)
+    if not target or target == self.petAnchorTo then return end
+    self.petAnchorTo = target
+    self.petColumn:ClearAllPoints()
+    self.petColumn:SetPoint("TOPLEFT", target, "TOPRIGHT", COL_GAP, 0)
 end
 
 -- Iterate every column header. Used by modules that need to walk all
@@ -184,6 +300,7 @@ function Header:ApplyScale()
             self.columns[i]:SetScale(s)
         end
     end
+    if self.petColumn then self.petColumn:SetScale(s) end
     if ns.TankHeader and ns.TankHeader.frame then ns.TankHeader.frame:SetScale(s) end
     if ns.TargetCells then
         if ns.TargetCells.target then ns.TargetCells.target:SetScale(s) end
@@ -254,6 +371,12 @@ ns:On("PLAYER_REGEN_ENABLED", function()
     if Header.tankOffsetPending then
         Header.tankOffsetPending = false
         Header:Reposition()
+    end
+    if Header.pendingShowPets then
+        Header:ApplyShowPets()
+    end
+    if Header.pendingPetReanchor then
+        Header:ReanchorPetColumn()
     end
 end)
 

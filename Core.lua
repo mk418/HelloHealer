@@ -315,6 +315,10 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             ns.Bindings:Unset(btn, mod)
             print(("|cff80ff80HelloHealer|r unbound %s%s"):format(mod ~= "" and (mod .. "-") or "", btnName))
         else
+            if not GetSpellInfo(spell) then
+                print(("|cff80ff80HelloHealer|r unknown spell: %q (binding not saved)"):format(spell))
+                return
+            end
             ns.Bindings:Set(btn, mod, spell)
             print(("|cff80ff80HelloHealer|r bound %s%s -> %s"):format(mod ~= "" and (mod .. "-") or "", btnName, spell))
         end

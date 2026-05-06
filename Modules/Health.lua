@@ -5,6 +5,9 @@ local function isRelevant(unit)
     return unit == "player"
         or unit:match("^party%d$")
         or unit:match("^raid%d+$")
+        or unit == "pet"
+        or unit:match("^partypet%d$")
+        or unit:match("^raidpet%d+$")
         or unit == "target"
         or unit == "targettarget"
 end

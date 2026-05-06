@@ -278,6 +278,11 @@ local function buildBindingRow(parent, b)
     local function save()
         local newSpell = edit:GetText():gsub("^%s+", ""):gsub("%s+$", "")
         if newSpell == b.spell then return end
+        if newSpell ~= "" and not GetSpellInfo(newSpell) then
+            print(("|cff80ff80HelloHealer|r unknown spell: %q (binding not saved)"):format(newSpell))
+            edit:SetText(b.spell)
+            return
+        end
         if newSpell == "" then
             ns.Bindings:Unset(b.btn, b.mod)
         else
@@ -340,6 +345,10 @@ local function buildAddRow(parent)
         local btn, mod = parseCombo(combo)
         if not btn then
             print("|cff80ff80HelloHealer|r invalid combo: " .. combo .. "  (try left, shift-left, ctrl-right, mouse4, ...)")
+            return
+        end
+        if not GetSpellInfo(spell) then
+            print(("|cff80ff80HelloHealer|r unknown spell: %q (binding not saved)"):format(spell))
             return
         end
         ns.Bindings:Set(btn, mod, spell)
@@ -558,6 +567,19 @@ function S:Build()
         HelloHealerCharDB.locked = self:GetChecked() and true or false
         if ns.Header and ns.Header.RefreshMover then ns.Header:RefreshMover() end
     end)
+
+    -- Pet column toggle. The pet header itself is built unconditionally
+    -- in Header:Create; this checkbox just flips the saved flag and
+    -- calls ApplyShowPets, which is combat-gated internally.
+    local petsCb = makeCheckButton(content, "Show pet frames")
+    petsCb:SetPoint("LEFT", lockCb, "RIGHT", 140, 0)
+    petsCb:SetScript("OnClick", function(self)
+        HelloHealerCharDB.showPets = self:GetChecked() and true or false
+        if ns.Header and ns.Header.ApplyShowPets then ns.Header:ApplyShowPets() end
+    end)
+    table.insert(panel.staticGated, petsCb)
+    attachCombatTooltip(petsCb)
+    panel.petsCb = petsCb
     y = y - 32
 
     -- Scale slider (uses OptionsSliderTemplate which provides Low/High
@@ -656,6 +678,7 @@ function S:Build()
 
     panel:SetScript("OnShow", function()
         lockCb:SetChecked(HelloHealerCharDB.locked and true or false)
+        petsCb:SetChecked(HelloHealerCharDB.showPets and true or false)
         local s = (HelloHealerDB.layout and HelloHealerDB.layout.scale) or 1.0
         scaleSlider:SetValue(s)
         valueLabel:SetText(("%.2f"):format(s))

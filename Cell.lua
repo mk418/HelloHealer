@@ -191,6 +191,32 @@ local function unitSubgroup(unit)
     return subgroup
 end
 
+-- Resolve a unit's current zone name. Three sources:
+--   1. The player unit always knows its own zone via GetRealZoneText.
+--   2. Raid members surface their zone as the 7th return of
+--      GetRaidRosterInfo (live, including offline players' last-known
+--      zone).
+--   3. Party members have no equivalent API in Classic Era — fall back
+--      to the player's zone since the party is almost always grouped
+--      together for instanced content.
+local function unitZone(unit)
+    if not unit then return nil end
+    if UnitIsUnit(unit, "player") then
+        return GetRealZoneText()
+    end
+    if IsInRaid() then
+        local idx = UnitInRaid(unit)
+        if idx then
+            local _, _, _, _, _, _, zone = GetRaidRosterInfo(idx + 1)
+            return zone
+        end
+    end
+    if IsInGroup() and UnitInParty and UnitInParty(unit) then
+        return GetRealZoneText()
+    end
+    return nil
+end
+
 local function rebuildTooltip(button)
     local unit = button:GetAttribute("unit")
     if not unit or not UnitExists(unit) then return end
@@ -206,6 +232,12 @@ local function rebuildTooltip(button)
         subgroup and ("Group " .. subgroup) or nil,
         cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1,
         0.7, 0.7, 0.7)
+
+    local zone = unitZone(unit)
+    if zone and zone ~= "" then
+        idx = idx + 1
+        setLine(f, idx, zone, nil, 0.7, 0.7, 0.7)
+    end
 
     local hp, hpMax = UnitHealth(unit), UnitHealthMax(unit)
     if hpMax and hpMax > 0 then
@@ -437,11 +469,22 @@ function Cell:Skin(button)
     -- it sits ABOVE the HoT/debuff icons (sublayer 0) when their
     -- positions overlap — combined with a 1px black drop shadow this
     -- keeps the text readable when an icon is directly behind it.
+    --
+    -- SetWordWrap(false) + SetMaxLines(1) keep names that overflow the
+    -- cell width on a single line and end with the engine's "..."
+    -- truncation. Without these, multi-word names (and long single-word
+    -- ones with the wrap default) wrap to a second line — and because
+    -- the FontString is anchored TOPLEFT/TOPRIGHT (height grows
+    -- downward), wrapping shifts the visible text off the cell's top
+    -- edge.
     local nameFS = hpBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     nameFS:SetDrawLayer("OVERLAY", 6)
     nameFS:SetPoint("TOPLEFT", 2, -1)
     nameFS:SetPoint("TOPRIGHT", -2, -1)
     nameFS:SetJustifyH("LEFT")
+    nameFS:SetJustifyV("TOP")
+    nameFS:SetWordWrap(false)
+    if nameFS.SetMaxLines then nameFS:SetMaxLines(1) end
     nameFS:SetShadowColor(0, 0, 0, 1)
     nameFS:SetShadowOffset(1, -1)
     button.hname = nameFS
@@ -710,6 +753,15 @@ function Cell:FindByUnit(unit)
     if not unit or not ns.Header or not ns.Header.columns then return nil end
     for i = 1, #ns.Header.columns do
         local children = { ns.Header.columns[i]:GetChildren() }
+        for j = 1, #children do
+            local child = children[j]
+            if child:GetAttribute("unit") == unit then
+                return child
+            end
+        end
+    end
+    if ns.Header.petColumn then
+        local children = { ns.Header.petColumn:GetChildren() }
         for j = 1, #children do
             local child = children[j]
             if child:GetAttribute("unit") == unit then

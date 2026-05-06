@@ -20,6 +20,7 @@ local charDefaults = {
     locked = true,
     tankList = {},
     tankFramesEnabled = true,
+    showPets = false,
     bindings = {},
 }
 

@@ -78,3 +78,16 @@ ns:On("PLAYER_REGEN_ENABLED", function()
         pendingButtons[button] = nil
     end
 end)
+
+-- Spellbook readiness: at PLAYER_LOGIN, GetSpellInfo can return nil for
+-- spells the player actually knows because spell data hasn't streamed
+-- in yet. The first ApplyTo (run from Cell:Skin) then silently drops
+-- those bindings, and Cell:Skin's `skinned` cache prevents a retry. By
+-- the time SPELLS_CHANGED fires, spell data is ready, so re-run ApplyAll
+-- to backfill any bindings that got skipped during the cold-load window.
+-- /reload masks this because spell data is already cached on the second
+-- pass. Also fires when the player learns/unlearns a spell, which is
+-- harmless (re-applies identical bindings).
+ns:On("SPELLS_CHANGED", function()
+    CC:ApplyAll()
+end)
