@@ -31,6 +31,12 @@ ignore:
     - .github
     - DESIGN.md
     - README.md
+    # Project logo. Kept in the repo for use as the CurseForge project
+    # icon and any future docs/marketing surface, but not referenced
+    # anywhere in the addon itself — WoW can't load PNG textures at
+    # runtime. Excluded from the released zip so users don't pull
+    # down a 1.6 MB file the addon never reads.
+    - HelloHealer.png
 
 # Generate a -nolib variant of the zip so users who already have
 # LibStub/LibHealComm via another addon can grab a smaller download
