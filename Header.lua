@@ -32,28 +32,6 @@ end
 -- branch of configureChildren.
 local COLUMN_FILTERS = { "1,2", "3,4", "5,6", "7,8" }
 
--- Track when WE entered a group during combat (solo -> grouped while
--- in combat lockdown). When that's the case, our cells are likely
--- partial / mid-spawn, so we hide both headers (alpha 0) until combat
--- ends and let Blizzard / DragonflightUI frames be the fallback.
--- Detection is specifically a wasInGroup -> nowInGroup transition so
--- the inviter (who didn't change state) keeps their working cells.
--- Registered at file-load time so they run BEFORE skinAll (which is
--- registered at PLAYER_LOGIN inside Header:Create) — order matters,
--- skinAll reads the flag.
-local joinedInCombat = false
-local wasInGroup = false
-ns:On("GROUP_ROSTER_UPDATE", function()
-    local nowInGroup = IsInGroup()
-    if InCombatLockdown() and not wasInGroup and nowInGroup then
-        joinedInCombat = true
-    end
-    wasInGroup = nowInGroup
-end)
-ns:On("PLAYER_REGEN_ENABLED", function()
-    joinedInCombat = false
-end)
-
 local function makeColumn(index, filter, anchorTo, savedPos)
     local h = CreateFrame("Frame", "HelloHealerMainHeader" .. index, UIParent, "SecureGroupHeaderTemplate")
     h:SetMovable(index == 1)
@@ -188,7 +166,6 @@ function Header:Create()
 
     local function skinAll()
         if not self.columns then return end
-        local alpha = joinedInCombat and 0 or 1
         for i = 1, #self.columns do
             local h = self.columns[i]
             -- Force the secure header to re-iterate the group when out of
@@ -208,11 +185,6 @@ function Header:Create()
                     ns.Cell:Skin(k)
                 end
             end
-            -- If a roster change fired during this combat session, our
-            -- cells may be partial / mid-spawn — hide them and let the
-            -- Blizzard/DragonflightUI frames be the fallback. Restored on
-            -- PLAYER_REGEN_ENABLED, when joinedInCombat is cleared.
-            h:SetAlpha(alpha)
         end
         if self.petColumn and HelloHealerCharDB and HelloHealerCharDB.showPets then
             self:ReanchorPetColumn()
@@ -227,10 +199,6 @@ function Header:Create()
                     ns.Cell:Skin(k)
                 end
             end
-            self.petColumn:SetAlpha(alpha)
-        end
-        if ns.TankHeader and ns.TankHeader.frame then
-            ns.TankHeader.frame:SetAlpha(alpha)
         end
     end
 

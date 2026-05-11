@@ -492,7 +492,7 @@ Update the WoW path to your install. If the addon shows "Out of Date," check `/d
 ### Known design decisions deferred
 
 - [ ] Pet frames (out of scope for v1; revisit if hunters/warlocks ask)
-- [ ] Pre-spawn all 40 raid slots at addon load — current workaround (alpha-0 hide of our headers when joining a group during combat, plus the post-combat `skinAll` catch-up; see `Header.lua` `joinedInCombat` flag) is in place. Deferred until real-raid testing shows whether the workaround is sufficient or whether the cascading-taint scenario in *Known issues* surfaces often enough to justify the secure-environment work (`SecureHandlerSetFrameRef` + `SecureHandlerExecute`)
+- [ ] Pre-spawn all 40 raid slots at addon load — currently relies on the post-combat `skinAll` catch-up: cells for players added mid-combat don't spawn until `PLAYER_REGEN_ENABLED`. Deferred until real-raid testing shows whether that gap is acceptable or whether the cascading-taint scenario in *Known issues* surfaces often enough to justify the secure-environment work (`SecureHandlerSetFrameRef` + `SecureHandlerExecute`)
 
 ---
 
