@@ -41,3 +41,4 @@ Modules\Defensives.lua
 Modules\MissingBuffs.lua
 Modules\Focus.lua
 Modules\Triage.lua
+Modules\SubgroupHighlight.lua

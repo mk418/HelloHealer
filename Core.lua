@@ -403,6 +403,56 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         table.insert(list, name)
         if ns.Focus and ns.Focus.RepaintAll then ns.Focus.RepaintAll() end
         print("|cff80ff80HelloHealer|r added focus: " .. name)
+    elseif msg == "highlights" then
+        HelloHealerCharDB.highlightSubgroups = HelloHealerCharDB.highlightSubgroups or {}
+        local nums = {}
+        for k in pairs(HelloHealerCharDB.highlightSubgroups) do
+            nums[#nums + 1] = k
+        end
+        table.sort(nums)
+        if #nums == 0 then
+            print("|cff80ff80HelloHealer|r highlighted subgroups: (none)")
+        else
+            print("|cff80ff80HelloHealer|r highlighted subgroups: " .. table.concat(nums, ", "))
+        end
+    elseif msg == "highlight" or msg:match("^highlight%s") then
+        local arg = msg:match("^highlight%s+(.+)$")
+        if arg then arg = arg:gsub("^%s+", ""):gsub("%s+$", "") end
+        HelloHealerCharDB.highlightSubgroups = HelloHealerCharDB.highlightSubgroups or {}
+        local set = HelloHealerCharDB.highlightSubgroups
+        if not arg then
+            print("|cff80ff80HelloHealer|r usage: /hh highlight <N> [N...]  (toggles each; /hh highlight clear to wipe)")
+            return
+        end
+        if arg == "clear" then
+            local had = next(set) ~= nil
+            HelloHealerCharDB.highlightSubgroups = {}
+            if ns.SubgroupHighlight and ns.SubgroupHighlight.RepaintAll then ns.SubgroupHighlight.RepaintAll() end
+            print("|cff80ff80HelloHealer|r highlighted subgroups " .. (had and "cleared" or "(already empty)"))
+            return
+        end
+        local toggled, invalid = {}, {}
+        for tok in arg:gmatch("%S+") do
+            local n = tonumber(tok)
+            if n and n >= 1 and n <= 8 and math.floor(n) == n then
+                if set[n] then
+                    set[n] = nil
+                    toggled[#toggled + 1] = "-" .. n
+                else
+                    set[n] = true
+                    toggled[#toggled + 1] = "+" .. n
+                end
+            else
+                invalid[#invalid + 1] = tok
+            end
+        end
+        if #invalid > 0 then
+            print("|cff80ff80HelloHealer|r ignored invalid subgroups (need 1-8): " .. table.concat(invalid, ", "))
+        end
+        if #toggled > 0 then
+            if ns.SubgroupHighlight and ns.SubgroupHighlight.RepaintAll then ns.SubgroupHighlight.RepaintAll() end
+            print("|cff80ff80HelloHealer|r highlight " .. table.concat(toggled, " "))
+        end
     elseif msg == "unfocus" or msg:match("^unfocus%s+") then
         local name = raw:match("^[Uu][Nn][Ff][Oo][Cc][Uu][Ss]%s+(%S+)")
         if not name then
@@ -429,7 +479,7 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             print("|cff80ff80HelloHealer|r not in focus list: " .. name)
         end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh highlight <N> [N...], /hh highlight clear, /hh highlights, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
 
@@ -442,9 +492,10 @@ end
 -- internally) and the focus repaint is non-secure, so no extra gating.
 ns:On("GROUP_LEFT", function()
     if not HelloHealerCharDB then return end
-    local clearedTanks = HelloHealerCharDB.tankList and #HelloHealerCharDB.tankList > 0
-    local clearedFocus = HelloHealerCharDB.focusList and #HelloHealerCharDB.focusList > 0
-    if not clearedTanks and not clearedFocus then return end
+    local clearedTanks      = HelloHealerCharDB.tankList          and #HelloHealerCharDB.tankList > 0
+    local clearedFocus      = HelloHealerCharDB.focusList         and #HelloHealerCharDB.focusList > 0
+    local clearedHighlights = HelloHealerCharDB.highlightSubgroups and next(HelloHealerCharDB.highlightSubgroups) ~= nil
+    if not clearedTanks and not clearedFocus and not clearedHighlights then return end
 
     if clearedTanks then
         HelloHealerCharDB.tankList = {}
@@ -464,9 +515,16 @@ ns:On("GROUP_LEFT", function()
             ns.Settings:RefreshFocusList()
         end
     end
+    if clearedHighlights then
+        HelloHealerCharDB.highlightSubgroups = {}
+        if ns.SubgroupHighlight and ns.SubgroupHighlight.RepaintAll then
+            ns.SubgroupHighlight.RepaintAll()
+        end
+    end
 
     local parts = {}
-    if clearedTanks then parts[#parts + 1] = "tank list" end
-    if clearedFocus then parts[#parts + 1] = "focus list" end
+    if clearedTanks      then parts[#parts + 1] = "tank list" end
+    if clearedFocus      then parts[#parts + 1] = "focus list" end
+    if clearedHighlights then parts[#parts + 1] = "subgroup highlights" end
     print("|cff80ff80HelloHealer|r left group — cleared " .. table.concat(parts, " and "))
 end)

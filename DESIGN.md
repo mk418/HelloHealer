@@ -216,6 +216,9 @@ Toggleable with `/hh tanks` or via the settings panel.
 /hh tanks                 toggle tank frames
 /hh tank add <name>
 /hh tank remove <name>
+/hh highlight <N> [N...]  toggle subgroup highlight (1-8)
+/hh highlight clear       wipe subgroup highlights
+/hh highlights            list highlighted subgroups
 /hh bind <class> <click> <spell>
 /hh reset                 wipe all settings to defaults
 ```
@@ -452,6 +455,7 @@ Update the WoW path to your install. If the addon shows "Out of Date," check `/d
 - [x] **MissingBuffs.lua** — class-scoped raid-buff tracker (Priest: Fortitude + Spirit; Druid: Mark of the Wild; both versions of each spell satisfy the category). A 3 px solid amber bar outside the cell's left edge (lives in the column gap, or open space for column-1 / tank cells) signals any group/tank cell missing one of the player's class buffs, plus a "Missing buffs:" tooltip section listing what's missing. Left-edge bar chosen over an outer-ring glow because the 2 px row gap is too tight for adjacent rings to coexist without doubling up; chosen over an inner full-cell tint because that competed with the class-coloured HP fill. Skips Target/ToT cells, non-player units, and offline players. Spirit category is suppressed for warriors/rogues (no mana to regenerate); hunters still get the alert
 - [x] **Focus.lua** — per-character focus list for raid healing assignments. Bright pink outer-ring glow (additive blend, same geometry as TargetGlow) on the existing group/tank cell of any name in `HelloHealerCharDB.focusList`. Managed via `/hh focus [name]` (add, or use targeted friendly), `/hh unfocus [name]`, `/hh focuses` (list), `/hh focus clear` (wipe). When the focused player is also your current target the cyan + pink glows additive-blend rather than fighting for pixels. Skips Target/ToT cells, non-player units. Persists across reloads for mid-raid recovery; auto-cleared on `GROUP_LEFT` (alongside the tank list)
 - [x] **Triage.lua** — bright white outer-ring glow (additive, same geometry as TargetGlow / Focus) on cells whose predicted post-heals HP fraction `(currentHP + LibHealComm-predicted incoming heals * heal modifier) / maxHP` falls below 0.50. Naturally suppresses itself when other healers already have the gap covered. Pure white at high alpha so it dominates the additive stack — even when a triage cell is also your target/focus the white reads as the "heal NOW" signal. Skips Target/ToT cells, non-player units, dead/ghost players (PendingRes handles them), and offline players. Degrades to plain `currentHP/maxHP < 0.50` when LibHealComm isn't available. Per-character toggle (`HelloHealerCharDB.triageEnabled`, default on) via the settings panel checkbox or `/hh triage [on|off]` for quick mid-fight switching
+- [x] **SubgroupHighlight.lua** — saturated-blue outer-ring glow (additive, same geometry as TargetGlow / Focus / Triage) on every cell whose raid subgroup is flagged in `HelloHealerCharDB.highlightSubgroups`. Managed via `/hh highlight <N> [N...]` (toggles each, accepts 1–8), `/hh highlight clear` (wipe), `/hh highlights` (list). Membership follows the player: subgroup is resolved on every `GROUP_ROSTER_UPDATE` via `ns.Cell.UnitSubgroup`, so a player who swaps subgroups mid-fight loses/gains the glow automatically. Distinct blue keeps it independently legible against the cyan target / pink focus / white triage / amber missing-buffs palette. Skips Target/ToT cells and non-player units. Persists across reloads; auto-cleared on `GROUP_LEFT` alongside the tank and focus lists
 
 ### Click-cast
 

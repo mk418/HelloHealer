@@ -192,7 +192,7 @@ end
 --      N out and call GetRaidRosterInfo(N) directly.
 --   2. "player" / "partyN" / other tokens have no direct mapping;
 --      walk the roster and match by name.
-local function unitSubgroup(unit)
+function Cell.UnitSubgroup(unit)
     if not unit or not IsInRaid() then return nil end
 
     local n = unit:match("^raid(%d+)$")
@@ -212,6 +212,7 @@ local function unitSubgroup(unit)
     end
     return nil
 end
+local unitSubgroup = Cell.UnitSubgroup
 
 -- Resolve a unit's current zone name. Three sources:
 --   1. The player unit always knows its own zone via GetRealZoneText.
@@ -712,6 +713,23 @@ function Cell:Skin(button)
     -- also your current target or assigned focus the white channel
     -- reads as "heal this NOW" through the underlying cyan/pink.
     button.triageGlow = {
+        makeGlow({"BOTTOMLEFT", button, "TOPLEFT", -gth, 0},
+                 {"BOTTOMRIGHT", button, "TOPRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPLEFT", button, "BOTTOMLEFT", -gth, 0},
+                 {"TOPRIGHT", button, "BOTTOMRIGHT", gth, 0}, nil, gth),
+        makeGlow({"TOPRIGHT", button, "TOPLEFT", 0, 0},
+                 {"BOTTOMRIGHT", button, "BOTTOMLEFT", 0, 0}, gth, nil),
+        makeGlow({"TOPLEFT", button, "TOPRIGHT", 0, 0},
+                 {"BOTTOMLEFT", button, "BOTTOMRIGHT", 0, 0}, gth, nil),
+    }
+
+    -- Subgroup-highlight glow: same outer-ring geometry, painted by
+    -- Modules/SubgroupHighlight.lua when this cell's player belongs to
+    -- a subgroup flagged in HelloHealerCharDB.highlightSubgroups.
+    -- Saturated blue keeps it independently legible against the cyan
+    -- target / pink focus / white triage / amber missing-buffs palette,
+    -- and additive-blends cleanly when those signals overlap.
+    button.subgroupGlow = {
         makeGlow({"BOTTOMLEFT", button, "TOPLEFT", -gth, 0},
                  {"BOTTOMRIGHT", button, "TOPRIGHT", gth, 0}, nil, gth),
         makeGlow({"TOPLEFT", button, "BOTTOMLEFT", -gth, 0},

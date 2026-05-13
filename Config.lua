@@ -23,6 +23,7 @@ local charDefaults = {
     showPets = false,
     bindings = {},
     focusList = {},
+    highlightSubgroups = {},
     triageEnabled = true,
     framesHidden = false,
 }
