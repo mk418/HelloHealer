@@ -32,6 +32,7 @@ Bindings.defaults = {
         { btn = 1, mod = "shift",      spell = "Healing Touch" },
         { btn = 1, mod = "ctrl",       spell = "Remove Curse" },
         { btn = 1, mod = "ctrl-shift", spell = "Mark of the Wild" },
+        { btn = 1, mod = "alt",        spell = "Nature's Swiftness" },
         { btn = 2, mod = "",           spell = "Rejuvenation" },
         { btn = 2, mod = "shift",      spell = "Rejuvenation" },
         { btn = 2, mod = "ctrl",       spell = "Abolish Poison" },
