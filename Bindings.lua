@@ -105,6 +105,53 @@ function Bindings:Get()
     return result
 end
 
+-- Resolve a stored spell name to one the player actually knows.
+-- Returns (name, exact, rank):
+--   name:  fully-qualified spell to bind/display, including rank
+--          suffix when ranks apply ("Lesser Healing Wave(Rank 6)").
+--   exact: true if the stored name resolves as-is (the user got what
+--          they stored), false if we substituted another rank to keep
+--          the click working on a leveling character.
+--   rank:  numeric rank that will actually be cast, or nil for
+--          single-rank spells (Nature's Swiftness, Resurrection).
+-- Returns nil for `name` when the player knows no rank of the spell.
+--
+-- Why: defaults bake in level-60 ranks (e.g. "Lesser Healing Wave(Rank
+-- 4)"). On a leveling character the exact rank doesn't exist yet, so
+-- we probe down from a safe cap (12 covers all Era healing spells) and
+-- bind the highest known rank instead — gives the leveling player a
+-- working click without forcing them to rebind, while preserving the
+-- curated downrank choices for a level-60 player whose exact rank
+-- resolves on the first try. Unranked stored bindings ("Healing Wave"
+-- with no suffix) are also probed so the tooltip can show "Rank 6" —
+-- the cast itself is unchanged either way (Blizzard auto-resolves
+-- unranked casts to the highest known rank).
+function Bindings:Resolve(spellName)
+    if not spellName or spellName == "" then return nil, false, nil end
+
+    local base, askedRank = spellName:match("^(.-)%(Rank (%d+)%)$")
+
+    if base then
+        askedRank = tonumber(askedRank)
+        if GetSpellInfo(spellName) then return spellName, true, askedRank end
+        for r = 12, 1, -1 do
+            if r ~= askedRank then
+                local candidate = base .. "(Rank " .. r .. ")"
+                if GetSpellInfo(candidate) then return candidate, false, r end
+            end
+        end
+        if GetSpellInfo(base) then return base, false, nil end
+        return nil, false, nil
+    end
+
+    if not GetSpellInfo(spellName) then return nil, false, nil end
+    for r = 12, 1, -1 do
+        local candidate = spellName .. "(Rank " .. r .. ")"
+        if GetSpellInfo(candidate) then return candidate, true, r end
+    end
+    return spellName, true, nil
+end
+
 function Bindings:Set(btn, mod, spell)
     HelloHealerCharDB.bindings = HelloHealerCharDB.bindings or {}
     for _, b in ipairs(HelloHealerCharDB.bindings) do

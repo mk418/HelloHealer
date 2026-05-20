@@ -28,15 +28,20 @@ local function applyNow(button)
         -- Skip bindings whose spell the character doesn't know — leaving
         -- a click bound to an unknown spell silently fails on click,
         -- which is confusing. The tooltip surfaces unknown ones in red
-        -- so the user can see they're unbindable.
-        if GetSpellInfo(b.spell) then
+        -- so the user can see they're unbindable. Bindings:Resolve also
+        -- degrades a missing-rank stored name (e.g. "Healing Wave(Rank
+        -- 6)" on a level-30 shaman) to the highest known rank, so
+        -- leveling characters get a working click instead of a silent
+        -- skip; the tooltip flags any fallback in yellow.
+        local resolved = ns.Bindings:Resolve(b.spell)
+        if resolved then
             local prefix = (b.mod ~= "" and (b.mod .. "-")) or ""
             local typeAttr  = prefix .. "type" .. b.btn
             local macroAttr = prefix .. "macrotext" .. b.btn
             -- type=macro with [@mouseover] gives a clean "Out of range" failure
             -- and no pending cursor cast. type=spell goes pending instead.
             button:SetAttribute(typeAttr,  "macro")
-            button:SetAttribute(macroAttr, "/cast [@mouseover, exists, help] " .. b.spell)
+            button:SetAttribute(macroAttr, "/cast [@mouseover, exists, help] " .. resolved)
             table.insert(attrs, typeAttr)
             table.insert(attrs, macroAttr)
         end

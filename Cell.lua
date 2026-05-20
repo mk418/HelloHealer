@@ -397,16 +397,28 @@ local function rebuildTooltip(button)
             local b = bindings[i]
             if b.mod == mod then
                 matched = matched + 1
-                local rank, mana = spellRankAndCost(b.spell)
-                local known = GetSpellInfo(b.spell) ~= nil
-                local right = b.spell
-                if rank and rank ~= "" then right = right .. " (" .. rank .. ")" end
+                -- Show what will actually cast — including the rank
+                -- when the stored binding is unranked (Blizzard
+                -- auto-resolves to highest known; we surface which
+                -- rank that is so the tooltip doesn't make the user
+                -- guess). Strip any (Rank N) from the display name
+                -- and re-append from `actualRank` so we never
+                -- duplicate the suffix.
+                local resolved, exact, actualRank = ns.Bindings:Resolve(b.spell)
+                local mana
+                if resolved then _, mana = spellRankAndCost(resolved) end
+                local displayName = resolved or b.spell
+                local base = displayName:match("^(.-)%(Rank %d+%)$") or displayName
+                local right = base
+                if actualRank then right = right .. " (Rank " .. actualRank .. ")" end
                 if mana and mana > 0 then right = right .. " — " .. mana .. " mana" end
                 idx = idx + 1
                 local btnLabel = BUTTON_NAMES[b.btn] or ("Button " .. tostring(b.btn))
                 local rr, rg, rb
-                if known then rr, rg, rb = 0.4, 1.0, 0.4
-                else          rr, rg, rb = 1.0, 0.4, 0.4 end
+                if resolved and exact then     rr, rg, rb = 0.4, 1.0, 0.4   -- exact match
+                elseif resolved        then     rr, rg, rb = 1.0, 0.85, 0.2 -- rank fallback
+                else                            rr, rg, rb = 1.0, 0.4, 0.4  -- unknown
+                end
                 setLine(f, idx, btnLabel, right, 1, 1, 1, rr, rg, rb)
             end
         end
