@@ -2,13 +2,19 @@
 # release-builder GitHub Action and by `release.sh` runs locally.
 #
 # Libraries are embedded — committed under Libs/ alongside the rest
-# of the source — rather than fetched as externals. The original plan
-# was to use repos.wowace.com SVN externals, but that host is no
-# longer reliably reachable for the canonical LibStub /
-# LibHealComm-4.0 SVN paths and the build was failing during
-# external resolution. Embedding sidesteps the dependency on the
-# WowAce host entirely; library upgrades become explicit commits
+# of the source — rather than fetched as externals. WowAce SVN
+# externals were attempted first but the canonical LibStub /
+# LibHealComm-4.0 hosts are no longer reliably reachable, so
+# resolution fails the build. Embedding sidesteps the host
+# dependency entirely; library upgrades become explicit commits
 # that land in the same git history as everything else.
+#
+# LibHealComm-4.0 is the standalone CurseForge build (not the
+# HealBot Continued fork). On Classic Era 1.15 the HealBot fork's
+# UNIT_SPELLCAST_START handler silently bails for Shaman casts —
+# no errors, no callbacks fire — and the standalone build does
+# not. Swapping forks is the fix; do not regress without verifying
+# Shaman heal prediction still works.
 
 package-as: HelloHealer
 

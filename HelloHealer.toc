@@ -10,7 +10,7 @@
 # Libraries are embedded via .pkgmeta during release builds.
 # For local development, drop LibStub/LibHealComm into Libs/.
 Libs\LibStub\LibStub.lua
-Libs\HealBotShim.lua
+Libs\LibHealComm-4.0\libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibHealComm-4.0\LibHealComm-4.0.xml
 
 Core.lua
