@@ -45,7 +45,7 @@ Bindings.defaults = {
         { btn = 3, mod = "ctrl-shift", spell = "Gift of the Wild" },
     },
     SHAMAN = {
-        { btn = 1, mod = "",           spell = "Healing Wave(Rank 6)" },
+        { btn = 1, mod = "",           spell = "Healing Wave(Rank 5)" },
         { btn = 1, mod = "shift",      spell = "Healing Wave" },
         { btn = 1, mod = "ctrl",       spell = "Cure Disease" },
         { btn = 1, mod = "alt",        spell = "Nature's Swiftness" },
