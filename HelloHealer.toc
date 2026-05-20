@@ -2,7 +2,7 @@
 ## Title: HelloHealer
 ## Notes: Lean, opinionated healing UI for Priest, Druid, Paladin, Shaman
 ## Author: Drikk
-## Version: 0.4.0
+## Version: 0.5.0
 ## X-Curse-Project-ID: 1535533
 ## SavedVariables: HelloHealerDB
 ## SavedVariablesPerCharacter: HelloHealerCharDB
