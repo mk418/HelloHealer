@@ -5,6 +5,13 @@ local ADDON_NAME, ns = ...
 -- Resurrection — UnitHasIncomingResurrection covers all of them).
 -- Cleared automatically when the popup is accepted, declined, or
 -- times out via INCOMING_RESURRECT_CHANGED.
+--
+-- Gated on UnitIsDeadOrGhost because UnitHasIncomingResurrection
+-- also returns true for *living* players with a pre-applied rez
+-- effect attached (Warlock Soulstone, Shaman Reincarnation) — they
+-- aren't being resurrected right now, the effect just stands by for
+-- when they next die. Without the dead-check the icon lights up on
+-- every soulstoned healer the moment they zone in.
 local function paint(button)
     if not button.resIcon then return end
     local unit = button:GetAttribute("unit")
@@ -12,7 +19,10 @@ local function paint(button)
         button.resIcon:Hide()
         return
     end
-    if UnitHasIncomingResurrection and UnitHasIncomingResurrection(unit) then
+    if UnitIsDeadOrGhost(unit)
+        and UnitHasIncomingResurrection
+        and UnitHasIncomingResurrection(unit)
+    then
         button.resIcon:Show()
     else
         button.resIcon:Hide()
