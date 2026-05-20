@@ -82,12 +82,12 @@ Same scheme everywhere; only the spells differ.
 
 | Click | Priest | Druid | Paladin | Shaman |
 |---|---|---|---|---|
-| Left | Flash Heal | Healing Touch | Holy Light | Lesser Healing Wave |
-| Shift-Left | Greater Heal | Healing Touch | Holy Light | Lesser Healing Wave |
+| Left | Flash Heal | Healing Touch | Holy Light | Healing Wave |
+| Shift-Left | Greater Heal | Healing Touch | Holy Light | Healing Wave |
 | Right | Renew | Rejuvenation | Flash of Light | Chain Heal |
 | Shift-Right | Power Word: Shield | Regrowth | Flash of Light | Chain Heal |
-| Middle | Dispel Magic | Remove Curse | Cleanse | Healing Wave |
-| Shift-Middle | Resurrection | Rebirth (in combat) | Redemption | Healing Wave |
+| Middle | Dispel Magic | Remove Curse | Cleanse | Lesser Healing Wave |
+| Shift-Middle | Resurrection | Rebirth (in combat) | Redemption | Lesser Healing Wave |
 | Mouse4 / Mouse5 | reserved for user | | | |
 
 **Combat-res safety:** clicking the res binding while in combat requires a modifier (default `shift`) to avoid wasting Druid Rebirth.
