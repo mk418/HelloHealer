@@ -1,6 +1,6 @@
 # HelloHealer — Design Document
 
-A lean, opinionated healing addon for World of Warcraft Classic Era, intended to replace HealBot Continued for users who play Priest, Druid, or Paladin and want something that works out of the box and stays working across patches.
+A lean, opinionated healing addon for World of Warcraft Classic Era, intended to replace HealBot Continued for users who play Priest, Druid, Paladin, or Shaman and want something that works out of the box and stays working across patches.
 
 ---
 
@@ -80,15 +80,15 @@ A lean, opinionated healing addon for World of Warcraft Classic Era, intended to
 
 Same scheme everywhere; only the spells differ.
 
-| Click | Priest | Druid | Paladin |
-|---|---|---|---|
-| Left | Flash Heal | Healing Touch | Holy Light |
-| Shift-Left | Greater Heal | Healing Touch | Holy Light |
-| Right | Renew | Rejuvenation | Flash of Light |
-| Shift-Right | Power Word: Shield | Regrowth | Flash of Light |
-| Middle | Dispel Magic | Remove Curse | Cleanse |
-| Shift-Middle | Resurrection | Rebirth (in combat) | Redemption |
-| Mouse4 / Mouse5 | reserved for user | | |
+| Click | Priest | Druid | Paladin | Shaman |
+|---|---|---|---|---|
+| Left | Flash Heal | Healing Touch | Holy Light | Lesser Healing Wave |
+| Shift-Left | Greater Heal | Healing Touch | Holy Light | Lesser Healing Wave |
+| Right | Renew | Rejuvenation | Flash of Light | Chain Heal |
+| Shift-Right | Power Word: Shield | Regrowth | Flash of Light | Chain Heal |
+| Middle | Dispel Magic | Remove Curse | Cleanse | Healing Wave |
+| Shift-Middle | Resurrection | Rebirth (in combat) | Redemption | Healing Wave |
+| Mouse4 / Mouse5 | reserved for user | | | |
 
 **Combat-res safety:** clicking the res binding while in combat requires a modifier (default `shift`) to avoid wasting Druid Rebirth.
 
@@ -403,7 +403,7 @@ Update the WoW path to your install. If the addon shows "Out of Date," check `/d
 - [x] Event dispatcher (`Core.lua`)
 - [x] SavedVariables defaults + auto-merge (`Config.lua`)
 - [x] Conditional Blizzard frame suppression (`BlizzardFrames.lua`) — uses `SetParent` to hidden frame to avoid taint; auto-detects DragonflightUI / ElvUI and skips party-frame suppression when present
-- [x] Loads only on Priest/Druid/Paladin
+- [x] Loads only on Priest/Druid/Paladin/Shaman
 
 ### Frames & layout
 - [x] `SecureGroupHeaderTemplate` foundation with auto-skin (`Header.lua`)
@@ -413,7 +413,7 @@ Update the WoW path to your install. If the addon shows "Out of Date," check `/d
 - [x] Locked by default
 
 ### Click-cast
-- [x] Per-class default bindings for Priest/Druid/Paladin (`Bindings.lua`)
+- [x] Per-class default bindings for Priest/Druid/Paladin/Shaman (`Bindings.lua`)
 - [x] Macrotext `[@mouseover]` approach — clean "Out of range" failure, no auto-self-cast, no pending cursor cast (`ClickCast.lua`)
 - [x] Combat-queued attribute application
 
