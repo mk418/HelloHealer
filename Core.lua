@@ -81,7 +81,7 @@ ns:On("PLAYER_LOGIN", function()
             local label = sc:gsub("^%l", string.upper)
             local sample = table.concat(affected, ", ", 1, math.min(3, #affected))
             if #affected > 3 then sample = sample .. (", +%d more"):format(#affected - 3) end
-            print(("|cff80ff80HelloHealer|r |cffff8080Self Cast Key = %s|r overrides @mouseover — %d binding(s) will self-cast: %s. Fix in Interface → Options → Combat → Self Cast Key.")
+            print(("|cff80ff80HelloHealer|r |cffff8080Self Cast Key = %s|r overrides @mouseover — %d binding(s) will self-cast: %s. Use /hh selfcast off to disable.")
                 :format(label, #affected, sample))
         end
     end
@@ -276,6 +276,29 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         HelloHealerCharDB.bindings = {}
         ns.ClickCast:ApplyAll()
         print("|cff80ff80HelloHealer|r bindings reset to defaults")
+    elseif msg == "selfcast" or msg:match("^selfcast%s") then
+        local arg = msg:match("^selfcast%s+(%S+)")
+        if arg == "off" or arg == "none" or arg == "clear" then
+            local ok, reason = ns.Bindings:DisableSelfCast()
+            if ok then
+                print("|cff80ff80HelloHealer|r Self Cast Key disabled — @mouseover macros will no longer be overridden")
+                if ns.Settings and ns.Settings.RefreshSelfCast then ns.Settings:RefreshSelfCast() end
+            elseif ok == false then
+                print("|cff80ff80HelloHealer|r Self Cast Key is already unbound")
+            elseif reason == "combat" then
+                print("|cff80ff80HelloHealer|r can't change Self Cast Key in combat — try again after combat ends")
+            end
+        elseif arg == nil then
+            local cur = ns.Bindings:SelfCastModifier()
+            if cur then
+                print(("|cff80ff80HelloHealer|r Self Cast Key = %s  (use /hh selfcast off to disable)")
+                    :format(cur:gsub("^%l", string.upper)))
+            else
+                print("|cff80ff80HelloHealer|r Self Cast Key is not set")
+            end
+        else
+            print("|cff80ff80HelloHealer|r usage: /hh selfcast [off]  (shows state when no arg)")
+        end
     elseif msg == "bindings" then
         local list = ns.Bindings:Get()
         if #list == 0 then
@@ -503,7 +526,7 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             print("|cff80ff80HelloHealer|r not in focus list: " .. name)
         end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh highlight <N> [N...], /hh highlight clear, /hh highlights, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh highlight <N> [N...], /hh highlight clear, /hh highlights, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh selfcast [off], /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
 

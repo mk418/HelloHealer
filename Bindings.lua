@@ -188,6 +188,23 @@ function Bindings:ConflictsWithSelfCast(mod)
     return false
 end
 
+-- Clear WoW's Self Cast Key and persist to the active binding set so
+-- the change survives /reload. Returns:
+--   true       — cleared
+--   false      — already unbound, no-op
+--   nil, "combat" — SaveBindings is combat-locked; caller should retry
+--                   after PLAYER_REGEN_ENABLED.
+function Bindings:DisableSelfCast()
+    if not self:SelfCastModifier() then return false end
+    if InCombatLockdown() then return nil, "combat" end
+    if SetModifiedClick then SetModifiedClick("SELFCAST", "NONE") end
+    if SaveBindings then
+        local set = (GetCurrentBindingSet and GetCurrentBindingSet()) or 1
+        SaveBindings(set)
+    end
+    return true
+end
+
 -- Removing a non-default binding deletes the override entirely; for
 -- a default entry we store an empty-string override to suppress it.
 function Bindings:Unset(btn, mod)

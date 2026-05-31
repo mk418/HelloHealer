@@ -659,6 +659,25 @@ function S:RefreshBindings()
     S:RefreshCombatState()
 end
 
+-- Drive the Self Cast Key warning label + Disable button visibility
+-- from the current binding state. Called from OnShow, after the
+-- button clears the key, and on UPDATE_BINDINGS (catches changes the
+-- user makes via WoW's Interface options while the panel is open).
+function S:RefreshSelfCast()
+    local panel = self.panel
+    if not panel or not panel.selfCastLabel then return end
+    local sc = ns.Bindings and ns.Bindings:SelfCastModifier()
+    if sc then
+        local label = sc:gsub("^%l", string.upper)
+        panel.selfCastLabel:SetText(("Self Cast Key = %s overrides @mouseover"):format(label))
+        panel.selfCastLabel:Show()
+        panel.selfCastBtn:Show()
+    else
+        panel.selfCastLabel:Hide()
+        panel.selfCastBtn:Hide()
+    end
+end
+
 -- Sweep every gated control (static + the two dynamic containers') and
 -- enable/disable based on combat lockdown. Called from OnShow, after
 -- each Refresh*, and on PLAYER_REGEN_DISABLED / PLAYER_REGEN_ENABLED.
@@ -873,6 +892,32 @@ function S:Build()
     bindH:SetPoint("TOPLEFT", focusContainer, "BOTTOMLEFT", -8, -16)
     panel.bindingsHeader = bindH
 
+    -- Self Cast Key conflict surface. WoW's Self Cast Key (Interface
+    -- → Options → Combat) forces any spell cast while the chosen
+    -- modifier is held onto the player, overriding [@mouseover] in
+    -- our click-cast macros. The label + Disable button only show
+    -- when the user actually has the conflict; RefreshSelfCast()
+    -- drives visibility from OnShow and after the button is clicked.
+    local selfCastLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    selfCastLabel:SetPoint("LEFT", bindH, "RIGHT", 12, 0)
+    selfCastLabel:SetTextColor(1.0, 0.55, 0.2)
+    panel.selfCastLabel = selfCastLabel
+
+    local selfCastBtn = makeButton(content, "Disable", 90)
+    selfCastBtn:SetPoint("LEFT", selfCastLabel, "RIGHT", 8, 0)
+    selfCastBtn:SetScript("OnClick", function()
+        local ok, reason = ns.Bindings:DisableSelfCast()
+        if ok then
+            print("|cff80ff80HelloHealer|r Self Cast Key disabled — @mouseover macros will no longer be overridden")
+        elseif reason == "combat" then
+            print("|cff80ff80HelloHealer|r can't change Self Cast Key in combat — try again after combat ends")
+        end
+        S:RefreshSelfCast()
+    end)
+    panel.selfCastBtn = selfCastBtn
+    table.insert(panel.staticGated, selfCastBtn)
+    attachCombatTooltip(selfCastBtn)
+
     local container = CreateFrame("Frame", nil, content)
     container:SetPoint("TOPLEFT", bindH, "BOTTOMLEFT", 8, -6)
     container:SetSize(540, 400)
@@ -889,6 +934,7 @@ function S:Build()
         S:RefreshTankList()
         S:RefreshFocusList()
         S:RefreshBindings()
+        S:RefreshSelfCast()
         -- The Refresh* calls already trigger RefreshCombatState, but
         -- call once more in case neither container had any rows to
         -- iterate (fresh saved-vars case).
@@ -901,6 +947,7 @@ function S:Build()
     if ns and ns.On then
         ns:On("PLAYER_REGEN_DISABLED", function() S:RefreshCombatState() end)
         ns:On("PLAYER_REGEN_ENABLED",  function() S:RefreshCombatState() end)
+        ns:On("UPDATE_BINDINGS",       function() S:RefreshSelfCast() end)
     end
 
     if Settings and Settings.RegisterCanvasLayoutCategory then
