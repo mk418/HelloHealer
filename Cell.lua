@@ -415,9 +415,17 @@ local function rebuildTooltip(button)
                 idx = idx + 1
                 local btnLabel = BUTTON_NAMES[b.btn] or ("Button " .. tostring(b.btn))
                 local rr, rg, rb
-                if resolved and exact then     rr, rg, rb = 0.4, 1.0, 0.4   -- exact match
-                elseif resolved        then     rr, rg, rb = 1.0, 0.85, 0.2 -- rank fallback
-                else                            rr, rg, rb = 1.0, 0.4, 0.4  -- unknown
+                -- Self-cast modifier conflict outranks the resolution
+                -- color: the row's spell may resolve fine, but the
+                -- click will still self-cast, which is the more useful
+                -- thing to surface.
+                local selfCast = ns.Bindings:ConflictsWithSelfCast(b.mod)
+                if selfCast then
+                    right = right .. "  (self-cast)"
+                    rr, rg, rb = 1.0, 0.55, 0.2
+                elseif resolved and exact then  rr, rg, rb = 0.4, 1.0, 0.4   -- exact match
+                elseif resolved              then rr, rg, rb = 1.0, 0.85, 0.2 -- rank fallback
+                else                              rr, rg, rb = 1.0, 0.4, 0.4  -- unknown
                 end
                 setLine(f, idx, btnLabel, right, 1, 1, 1, rr, rg, rb)
             end

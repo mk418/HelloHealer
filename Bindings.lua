@@ -163,6 +163,31 @@ function Bindings:Set(btn, mod, spell)
     table.insert(HelloHealerCharDB.bindings, { btn = btn, mod = mod, spell = spell })
 end
 
+-- WoW's Interface → Options → Combat → "Self Cast Key" exposes a
+-- modifier that forces any spell cast while held onto the player —
+-- and in Classic Era this override beats explicit [@mouseover] in
+-- click-cast macros. Returns the modifier as a lowercase token
+-- ("alt"/"ctrl"/"shift") matching our stored binding format, or nil
+-- when Self Cast Key is unbound.
+function Bindings:SelfCastModifier()
+    if not GetModifiedClick then return nil end
+    local key = GetModifiedClick("SELFCAST")
+    if not key or key == "" or key == "NONE" then return nil end
+    return key:lower()
+end
+
+-- True when this binding's modifier string contains the self-cast
+-- token, meaning the click will self-cast instead of landing on the
+-- moused-over frame.
+function Bindings:ConflictsWithSelfCast(mod)
+    local sc = self:SelfCastModifier()
+    if not sc or not mod then return false end
+    for tok in mod:gmatch("[^%-]+") do
+        if tok == sc then return true end
+    end
+    return false
+end
+
 -- Removing a non-default binding deletes the override entirely; for
 -- a default entry we store an empty-string override to suppress it.
 function Bindings:Unset(btn, mod)

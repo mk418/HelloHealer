@@ -61,6 +61,30 @@ ns:On("PLAYER_LOGIN", function()
     else
         print("|cff80ff80HelloHealer|r loaded for " .. class)
     end
+
+    -- Surface a Self Cast Key conflict at login. WoW's Self Cast Key
+    -- (Interface → Options → Combat) forces any spell cast while the
+    -- chosen modifier is held onto the player, beating [@mouseover]
+    -- in our click-cast macros — so e.g. a Druid with Self Cast = Alt
+    -- and the default Alt+Ctrl+Middle Innervate binding will self-
+    -- cast Innervate instead of giving it to the clicked frame's
+    -- unit. Listing the affected spells makes the cause obvious.
+    local sc = ns.Bindings:SelfCastModifier()
+    if sc then
+        local affected = {}
+        for _, b in ipairs(ns.Bindings:Get()) do
+            if ns.Bindings:ConflictsWithSelfCast(b.mod) then
+                affected[#affected + 1] = b.spell
+            end
+        end
+        if #affected > 0 then
+            local label = sc:gsub("^%l", string.upper)
+            local sample = table.concat(affected, ", ", 1, math.min(3, #affected))
+            if #affected > 3 then sample = sample .. (", +%d more"):format(#affected - 3) end
+            print(("|cff80ff80HelloHealer|r |cffff8080Self Cast Key = %s|r overrides @mouseover — %d binding(s) will self-cast: %s. Fix in Interface → Options → Combat → Self Cast Key.")
+                :format(label, #affected, sample))
+        end
+    end
 end)
 
 SLASH_HELLOHEALER1 = "/hh"
