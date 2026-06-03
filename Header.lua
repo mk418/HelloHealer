@@ -301,6 +301,10 @@ function Header:ApplyShowPets()
     else
         self.petColumn:Hide()
     end
+
+    if ns.Settings and ns.Settings.RefreshPetsCheckbox then
+        ns.Settings:RefreshPetsCheckbox()
+    end
 end
 
 -- Anchor the pet column to the rightmost player column that has at

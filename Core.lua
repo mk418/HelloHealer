@@ -397,6 +397,26 @@ SlashCmdList["HELLOHEALER"] = function(msg)
         else
             print("|cff80ff80HelloHealer|r frames " .. (hide and "hidden" or "shown"))
         end
+    elseif msg == "pets" or msg:match("^pets%s+") then
+        local arg = msg:match("^pets%s+(%S+)")
+        local on
+        if arg == "on" then
+            on = true
+        elseif arg == "off" then
+            on = false
+        elseif arg == nil then
+            on = not (HelloHealerCharDB and HelloHealerCharDB.showPets)
+        else
+            print("|cff80ff80HelloHealer|r usage: /hh pets [on|off]  (toggles when no arg)")
+            return
+        end
+        HelloHealerCharDB.showPets = on
+        if ns.Header and ns.Header.ApplyShowPets then ns.Header:ApplyShowPets() end
+        if InCombatLockdown() then
+            print(("|cff80ff80HelloHealer|r pet frames will be %s after combat"):format(on and "shown" or "hidden"))
+        else
+            print("|cff80ff80HelloHealer|r pet frames " .. (on and "shown" or "hidden"))
+        end
     elseif msg == "triage" or msg:match("^triage%s+") then
         local arg = msg:match("^triage%s+(%S+)")
         local on
@@ -526,7 +546,7 @@ SlashCmdList["HELLOHEALER"] = function(msg)
             print("|cff80ff80HelloHealer|r not in focus list: " .. name)
         end
     else
-        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh highlight <N> [N...], /hh highlight clear, /hh highlights, /hh triage [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh selfcast [off], /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
+        print("|cff80ff80HelloHealer|r commands: /hh lock, /hh resetpos, /hh reset, /hh tank [name], /hh untank [name], /hh tanks, /hh focus [name], /hh unfocus [name], /hh focuses, /hh focus clear, /hh highlight <N> [N...], /hh highlight clear, /hh highlights, /hh triage [on|off], /hh pets [on|off], /hh frames [on|off], /hh config, /hh bind <combo> <spell>, /hh unbind <combo>, /hh bindings, /hh resetbindings, /hh selfcast [off], /hh testdebuff, /hh scandebuffs, /hh scanbuffs [unit], /hh testlayout [group] [tanks], /hh debug")
     end
 end
 

@@ -574,6 +574,14 @@ function S:RefreshFramesCheckbox()
     panel.framesCb:SetChecked(not (HelloHealerCharDB and HelloHealerCharDB.framesHidden))
 end
 
+-- Called by Header:ApplyShowPets so the panel checkbox reflects the
+-- current pet-column state when the user toggles via /hh pets.
+function S:RefreshPetsCheckbox()
+    local panel = self.panel
+    if not panel or not panel.petsCb then return end
+    panel.petsCb:SetChecked(HelloHealerCharDB and HelloHealerCharDB.showPets and true or false)
+end
+
 function S:RefreshFocusList()
     local panel = self.panel
     if not panel or not panel.focusContainer then return end
