@@ -152,6 +152,73 @@ function Bindings:Resolve(spellName)
     return spellName, true, nil
 end
 
+-- Scaling group buffs whose rank carries a minimum *target* level: the
+-- game refuses "Target is too low level" when a rank is cast on someone
+-- below the level that rank was introduced at. Each entry is, per rank
+-- (index = rank number), that introduction level — i.e. the level a
+-- character trains the rank at.
+--
+-- We use the train level as the minimum-target gate. The real engine
+-- floor (DBC BaseLevel) is always <= the train level, so gating on the
+-- train level can never produce a cast the engine then rejects as "too
+-- low" — it only, at the very top end, picks one rank lower than
+-- strictly necessary for a target within a few levels of max. That
+-- trade (guaranteed-castable, occasionally one rank shy near 60) is the
+-- right one: the whole point is that the buff *lands*. Values verified
+-- against the Classic Era spell database.
+local BUFF_TARGET_LEVELS = {
+    ["Power Word: Fortitude"] = { 1, 12, 24, 36, 48, 60 },
+    ["Prayer of Fortitude"]   = { 48, 60 },
+    ["Divine Spirit"]         = { 30, 40, 50, 60 },
+    ["Prayer of Spirit"]      = { 60 },
+    ["Mark of the Wild"]      = { 1, 10, 20, 30, 40, 50, 60 },
+    ["Gift of the Wild"]      = { 50, 60 },
+    ["Thorns"]                = { 6, 14, 24, 34, 44, 54 },
+}
+
+-- Like Resolve, but additionally downranks scaling buffs to the highest
+-- rank the *target* is high enough to receive, so casting Fortitude on a
+-- low-level character lands a working rank instead of erroring "Target
+-- is too low level". Returns (name, exact, rank) with the same meaning
+-- as Resolve, except `exact` is also false when we dropped below the
+-- rank Resolve would have cast purely because of the target's level
+-- (surfaces the downrank in the tooltip).
+--
+-- targetLevel may be nil/unknown (alias cells, units not yet streamed
+-- in); in that case, and for any spell without a level table (heals,
+-- single-rank utility, buffs we don't track), this is exactly Resolve —
+-- so it is always safe to call in place of Resolve.
+function Bindings:ResolveForTarget(spellName, targetLevel)
+    local rName, rExact, rRank = self:Resolve(spellName)
+    if not rName then return rName, rExact, rRank end
+
+    local base = spellName:match("^(.-)%(Rank %d+%)$") or spellName
+    local levels = BUFF_TARGET_LEVELS[base]
+    if not levels or not targetLevel or targetLevel <= 0 then
+        return rName, rExact, rRank
+    end
+
+    -- rRank already reflects both the caster's highest known rank and any
+    -- explicit rank the user stored, so it is the correct upper bound —
+    -- never cast higher than the player asked for or can cast.
+    local cap = rRank or #levels
+    if cap > #levels then cap = #levels end
+    for r = cap, 1, -1 do
+        if targetLevel >= levels[r] then
+            local candidate = base .. "(Rank " .. r .. ")"
+            if GetSpellInfo(candidate) then
+                return candidate, (r == rRank) and rExact or false, r
+            end
+        end
+    end
+
+    -- Target is below even the lowest rank's floor (e.g. Prayer of
+    -- Fortitude, which starts at Rank 1 / level 48, on a level-30
+    -- target). No rank can land — keep Resolve's choice so behaviour
+    -- matches today rather than silently dropping the click.
+    return rName, rExact, rRank
+end
+
 function Bindings:Set(btn, mod, spell)
     HelloHealerCharDB.bindings = HelloHealerCharDB.bindings or {}
     for _, b in ipairs(HelloHealerCharDB.bindings) do

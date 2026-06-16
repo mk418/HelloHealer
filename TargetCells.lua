@@ -45,6 +45,10 @@ function TC:Create()
     ns:On("PLAYER_TARGET_CHANGED", function()
         repaint(target)
         repaint(tot)
+        -- The @target macro bakes a buff rank against the target's
+        -- level, so it must be rebuilt for the new target. ApplyBindings
+        -- self-guards combat (and a stale rank mid-combat is harmless).
+        TC:ApplyBindings()
     end)
 
     ns:On("UNIT_TARGET", function(unit)
@@ -67,14 +71,23 @@ function TC:ApplyBindings()
     if InCombatLockdown() then return end
     local bindings = ns.Bindings and ns.Bindings:Get()
     if not bindings or not self.target then return end
+    local tLevel = UnitExists("target") and UnitLevel("target") or nil
     for i = 1, #bindings do
         local b = bindings[i]
-        if GetSpellInfo(b.spell) then
+        -- @target downranks scaling buffs to the rank the current target
+        -- is high enough for (so Fortitude lands on a low-level target
+        -- instead of erroring). @targettarget keeps the caster's normal
+        -- resolution — it's the fallback branch and we didn't bake
+        -- against its level. ResolveForTarget/Resolve return nil for
+        -- spells the player doesn't know, which skips the binding.
+        local forTarget = ns.Bindings:ResolveForTarget(b.spell, tLevel)
+        local forToT    = ns.Bindings:Resolve(b.spell)
+        if forTarget or forToT then
             local prefix = (b.mod ~= "" and (b.mod .. "-")) or ""
             self.target:SetAttribute(prefix .. "type" .. b.btn, "macro")
             self.target:SetAttribute(prefix .. "macrotext" .. b.btn,
                 ("/cast [@target, exists, help] %s; [@targettarget, exists, help] %s")
-                    :format(b.spell, b.spell))
+                    :format(forTarget or forToT, forToT or forTarget))
         end
     end
 end

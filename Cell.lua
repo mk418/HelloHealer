@@ -403,8 +403,17 @@ local function rebuildTooltip(button)
                 -- rank that is so the tooltip doesn't make the user
                 -- guess). Strip any (Rank N) from the display name
                 -- and re-append from `actualRank` so we never
-                -- duplicate the suffix.
-                local resolved, exact, actualRank = ns.Bindings:Resolve(b.spell)
+                -- duplicate the suffix. ResolveForTarget also reflects
+                -- the per-target downrank, so the rank shown here is the
+                -- rank that will actually land on this cell's unit (and
+                -- a target-driven downrank shows yellow, like a
+                -- caster-knowledge fallback). Pass nil for the ToT cell
+                -- so the display matches its cast — alias cells re-point
+                -- too often to bake a per-target rank, so they don't
+                -- downrank.
+                local resolveLevel = (unit ~= "targettarget") and UnitLevel(unit) or nil
+                local resolved, exact, actualRank =
+                    ns.Bindings:ResolveForTarget(b.spell, resolveLevel)
                 local mana
                 if resolved then _, mana = spellRankAndCost(resolved) end
                 local displayName = resolved or b.spell
