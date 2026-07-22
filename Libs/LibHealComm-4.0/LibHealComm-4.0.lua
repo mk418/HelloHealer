@@ -33,8 +33,11 @@ local unpack = unpack
 local wipe = wipe
 
 local Ambiguate = Ambiguate
-local CastingInfo = CastingInfo
-local ChannelInfo = ChannelInfo
+-- On 1.15.9+ / 2.5.6+ (unified client) several classic globals only exist
+-- behind the loadDeprecationFallbacks CVar; each `or` fallback below mirrors
+-- Blizzard's own shim so the lib keeps working when the shims are absent.
+local CastingInfo = CastingInfo or function() return UnitCastingInfo("player") end
+local ChannelInfo = ChannelInfo or function() return UnitChannelInfo("player") end
 local CreateFrame = CreateFrame
 local GetInventoryItemLink = GetInventoryItemLink
 local GetInventorySlotInfo = GetInventorySlotInfo
@@ -45,22 +48,43 @@ local GetRaidRosterInfo = GetRaidRosterInfo
 local GetSpellBonusHealing = GetSpellBonusHealing
 local GetSpellCritChance = GetSpellCritChance
 local GetSpellInfo = GetSpellInfo
-local GetTalentInfo = GetTalentInfo
+local GetTalentInfo = GetTalentInfo or function(tabIndex, talentIndex, isInspect, isPet, groupIndex)
+	local talentInfo = C_SpecializationInfo.GetTalentInfo({
+		specializationIndex = tabIndex,
+		talentIndex = talentIndex,
+		isInspect = isInspect,
+		isPet = isPet,
+		groupIndex = groupIndex,
+	})
+	if not talentInfo then return nil end
+	return talentInfo.name, talentInfo.icon, talentInfo.tier, talentInfo.column, talentInfo.rank,
+		talentInfo.maxRank, talentInfo.meetsPrereq, talentInfo.previewRank,
+		talentInfo.meetsPreviewPrereq, talentInfo.isExceptional, talentInfo.hasGoldBorder,
+		talentInfo.talentID
+end
 local GetTime = GetTime
-local GetZonePVPInfo = GetZonePVPInfo
+local GetZonePVPInfo = GetZonePVPInfo or (C_PvP and C_PvP.GetZonePVPInfo)
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
-local IsEquippedItem = IsEquippedItem
+local IsEquippedItem = IsEquippedItem or (C_Item and C_Item.IsEquippedItem)
 local IsInGroup = IsInGroup
 local IsInInstance = IsInInstance
 local IsInRaid = IsInRaid
 local IsLoggedIn = IsLoggedIn
 local IsSpellInRange = IsSpellInRange
 local SpellIsTargeting = SpellIsTargeting
-local UnitAura = UnitAura
+local UnitAura = UnitAura or function(unit, index, filter)
+	local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, filter)
+	if not auraData then return nil end
+	return AuraUtil.UnpackAuraData(auraData)
+end
 local UnitCanAssist = UnitCanAssist
 local UnitExists = UnitExists
-local UnitBuff = UnitBuff
+local UnitBuff = UnitBuff or function(unit, index, filter)
+	local auraData = C_UnitAuras.GetBuffDataByIndex(unit, index, filter)
+	if not auraData then return nil end
+	return AuraUtil.UnpackAuraData(auraData)
+end
 local UnitGUID = UnitGUID
 local UnitIsCharmed = UnitIsCharmed
 local UnitIsVisible = UnitIsVisible
@@ -69,7 +93,7 @@ local UnitLevel = UnitLevel
 local UnitName = UnitName
 local UnitPlayerControlled = UnitPlayerControlled
 local CheckInteractDistance = CheckInteractDistance
-local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo or (C_CombatLog and C_CombatLog.GetCurrentEventInfo)
 local UnitHasVehicleUI = UnitHasVehicleUI or function() end
 local GetGlyphSocketInfo = GetGlyphSocketInfo or function() end
 local GetNumGlyphSockets = GetNumGlyphSockets or function() return 0 end
