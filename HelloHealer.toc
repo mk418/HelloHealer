@@ -6,6 +6,8 @@
 ## X-Curse-Project-ID: 1535533
 ## SavedVariables: HelloHealerDB
 ## SavedVariablesPerCharacter: HelloHealerCharDB
+## IconTexture: Interface\AddOns\HelloHealer\Icon.png
+## Category: Unit Frames
 
 # Libraries are embedded via .pkgmeta during release builds.
 # For local development, drop LibStub/LibHealComm into Libs/.
