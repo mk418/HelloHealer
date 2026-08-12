@@ -69,6 +69,7 @@ Bindings.defaults = {
         { btn = 2, mod = "ctrl-shift", spell = "Blessing of Freedom" },
         { btn = 3, mod = "",           spell = "Lay on Hands" },
         { btn = 3, mod = "shift",      spell = "Lay on Hands" },
+        { btn = 3, mod = "alt-ctrl",   spell = "Divine Intervention" },
         { btn = 3, mod = "ctrl-shift", spell = "Blessing of Salvation" },
     },
 }
