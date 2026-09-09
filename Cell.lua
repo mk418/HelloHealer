@@ -6,6 +6,10 @@ local Cell = ns.Cell
 local CELL_WIDTH  = 80
 local CELL_HEIGHT = 40
 
+-- The default cooldown font is too large for our 14px aura icons.
+local auraCountdownFont = CreateFont("HelloHealerAuraCountdownFont")
+auraCountdownFont:SetFont(STANDARD_TEXT_FONT, 8, "OUTLINE")
+
 local skinned = {}
 
 local BUTTON_NAMES = {
@@ -620,6 +624,7 @@ function Cell:Skin(button)
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetHideCountdownNumbers(false)
+        cd:SetCountdownFont("HelloHealerAuraCountdownFont")
         -- Reverse swipe: bright area = remaining duration, dark grows
         -- inward as the buff depletes. Matches the standard buff-icon
         -- visual intuition ("watch the bright slice shrink") rather
@@ -652,6 +657,7 @@ function Cell:Skin(button)
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetHideCountdownNumbers(false)
+        cd:SetCountdownFont("HelloHealerAuraCountdownFont")
         cd:SetReverse(true)  -- bright = remaining; see cdIcons above.
         slot.cooldown = cd
         slot:Hide()
